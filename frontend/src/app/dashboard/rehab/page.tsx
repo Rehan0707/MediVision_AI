@@ -5,7 +5,8 @@ import { Zap, Calendar, Activity, CheckCircle2, ChevronRight, Play, Info, Timer,
 import { useState, useEffect } from "react";
 import { useSettings } from "@/context/SettingsContext";
 
-import RehabExerciseScene from "@/components/animations/RehabExerciseScene";
+import dynamic from "next/dynamic";
+const RehabExerciseScene = dynamic(() => import("@/components/animations/RehabExerciseScene"), { ssr: false });
 import RehabCalendar from "@/components/dashboard/RehabCalendar";
 import DoctorCollaboration from "@/components/dashboard/DoctorCollaboration";
 
@@ -99,8 +100,8 @@ export default function RehabPage() {
                     <button
                         onClick={() => setIsPlainEnglish(!isPlainEnglish)}
                         className={`px-6 py-4 rounded-2xl border transition-all flex items-center gap-3 ${isPlainEnglish
-                                ? 'bg-[#00D1FF]/10 border-[#00D1FF]/40 text-[#00D1FF]'
-                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                            ? 'bg-[#00D1FF]/10 border-[#00D1FF]/40 text-[#00D1FF]'
+                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                             }`}
                     >
                         <Info size={16} />
@@ -236,8 +237,8 @@ export default function RehabPage() {
                                     onClick={handleStartSession}
                                     disabled={isSessionActive}
                                     className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${isSessionActive
-                                            ? 'bg-white/5 text-slate-500 cursor-not-allowed'
-                                            : 'bg-[#00D1FF] text-black hover:scale-105 shadow-glow'
+                                        ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                                        : 'bg-[#00D1FF] text-black hover:scale-105 shadow-glow'
                                         }`}
                                 >
                                     {isSessionActive ? `SESSION IN PROGRESS (${sessionProgress}%)` : "START SESSION"}
@@ -257,8 +258,8 @@ export default function RehabPage() {
                                     whileHover={{ x: 5 }}
                                     onClick={() => setActiveExerciseIdx(i)}
                                     className={`p-6 rounded-2xl border transition-all group cursor-pointer ${activeExerciseIdx === i
-                                            ? 'bg-[#00D1FF]/10 border-[#00D1FF]/30'
-                                            : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05]'
+                                        ? 'bg-[#00D1FF]/10 border-[#00D1FF]/30'
+                                        : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05]'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-4">
@@ -313,8 +314,8 @@ function Milestone({ date, title, status, description }: { date: string, title: 
     return (
         <div className="relative group/milestone">
             <div className={`absolute -left-[51px] top-0 w-10 h-10 rounded-full border-4 border-[#020617] flex items-center justify-center z-10 transition-transform group-hover/milestone:scale-110 ${status === 'done' ? 'bg-emerald-500' :
-                    status === 'active' ? 'bg-[#00D1FF] shadow-[0_0_15px_rgba(0,209,255,0.5)]' :
-                        'bg-slate-800'
+                status === 'active' ? 'bg-[#00D1FF] shadow-[0_0_15px_rgba(0,209,255,0.5)]' :
+                    'bg-slate-800'
                 }`}>
                 {status === 'done' && <CheckCircle2 size={16} className="text-white" />}
                 {status === 'active' && <Zap size={16} className="text-black" />}

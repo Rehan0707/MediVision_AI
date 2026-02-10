@@ -4,7 +4,8 @@ import { motion, useScroll, useTransform, useInView, AnimatePresence } from "fra
 import { useRef, useState, useEffect } from "react";
 import { Brain, Activity, Bone, Globe2, ShieldCheck, Zap, ArrowRight, Play, ChevronDown, Heart } from "lucide-react";
 import Link from "next/link";
-import BoneScene from "@/components/animations/BoneScene";
+import dynamic from "next/dynamic";
+const BoneScene = dynamic(() => import("@/components/animations/BoneScene"), { ssr: false });
 
 export default function KeynotePage() {
     const containerRef = useRef<HTMLDivElement>(null);

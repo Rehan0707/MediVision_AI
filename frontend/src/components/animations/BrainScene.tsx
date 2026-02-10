@@ -8,6 +8,7 @@ import * as THREE from "three";
 // Helper to generate a procedural "brain fold" noise texture
 function useBrainTexture() {
     return useMemo(() => {
+        if (typeof window === "undefined") return null;
         const canvas = document.createElement("canvas");
         canvas.width = 1024;
         canvas.height = 1024;
@@ -49,6 +50,8 @@ function useBrainTexture() {
         return texture;
     }, []);
 }
+
+const fallbackTexture = typeof window !== 'undefined' ? new THREE.Texture() : null;
 
 function BrainHemisphere({ side = 1, texture }: { side: number, texture: THREE.Texture }) {
     const meshRef = useRef<THREE.Mesh>(null);
@@ -131,7 +134,7 @@ function NeuralActivity() {
 }
 
 function BrainCore({ hasIssue }: { hasIssue?: boolean }) {
-    const texture = useBrainTexture();
+    const texture = useBrainTexture() || (fallbackTexture as THREE.Texture);
     const groupRef = useRef<THREE.Group>(null);
 
     useFrame((state) => {

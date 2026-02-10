@@ -3,10 +3,11 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bone, Activity, ShieldCheck, WifiOff, ArrowRight, Upload, Search, FileText, CheckCircle2, AlertCircle } from "lucide-react";
-import BoneScene from "@/components/animations/BoneScene";
-import HandScene from "@/components/animations/HandScene";
-import BrainScene from "@/components/animations/BrainScene";
-import ThoraxScene from "@/components/animations/ThoraxScene";
+import dynamic from "next/dynamic";
+const BoneScene = dynamic(() => import("@/components/animations/BoneScene"), { ssr: false });
+const HandScene = dynamic(() => import("@/components/animations/HandScene"), { ssr: false });
+const BrainScene = dynamic(() => import("@/components/animations/BrainScene"), { ssr: false });
+const ThoraxScene = dynamic(() => import("@/components/animations/ThoraxScene"), { ssr: false });
 import { useSettings } from "@/context/SettingsContext";
 
 export default function VisualizerPage() {

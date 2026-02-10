@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import scanRoutes from './routes/scanRoutes';
 import aiRoutes from './routes/aiRoutes';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json({ limit: '50mb' })); // Increased limit for image uploads
 // Routes
 app.use('/api/scans', scanRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

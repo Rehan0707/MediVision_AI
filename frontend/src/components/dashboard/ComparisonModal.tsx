@@ -3,11 +3,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Maximize2, MoveHorizontal, Zap } from "lucide-react";
 import { useState } from "react";
-import HandScene from "@/components/animations/HandScene";
-import BrainScene from "@/components/animations/BrainScene";
-import ThoraxScene from "@/components/animations/ThoraxScene";
-import KneeScene from "@/components/animations/KneeScene";
-import SpineScene from "@/components/animations/SpineScene";
+import dynamic from "next/dynamic";
+const HandScene = dynamic(() => import("@/components/animations/HandScene"), { ssr: false });
+const BrainScene = dynamic(() => import("@/components/animations/BrainScene"), { ssr: false });
+const ThoraxScene = dynamic(() => import("@/components/animations/ThoraxScene"), { ssr: false });
+const KneeScene = dynamic(() => import("@/components/animations/KneeScene"), { ssr: false });
+const SpineScene = dynamic(() => import("@/components/animations/SpineScene"), { ssr: false });
 
 interface ComparisonModalProps {
     isOpen: boolean;

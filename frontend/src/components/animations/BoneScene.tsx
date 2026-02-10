@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, Float, ContactShadows, Environment, Text } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, Float, ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
 
 export interface HotspotData {
@@ -57,17 +57,6 @@ function InjuryHotspot({ position, label, isActive }: { position: [number, numbe
                     emissiveIntensity={isActive ? 10 : 3}
                 />
             </mesh>
-            <Text
-                position={[0, 0.3, 0]}
-                fontSize={0.15}
-                color="white"
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.02}
-                outlineColor="#000000"
-            >
-                {label}
-            </Text>
         </group>
     );
 }
@@ -117,6 +106,18 @@ function StylizedBone({ hotspots = [], activeHotspotId }: { hotspots?: HotspotDa
 }
 
 export default function BoneScene({ hotspots = [], activeHotspotId = null }: { hotspots?: HotspotData[], activeHotspotId?: string | null }) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return (
+        <div className="w-full h-full bg-[#020617]/50 rounded-[2rem] flex items-center justify-center">
+            <div className="text-[#00D1FF] text-[8px] font-black uppercase tracking-[0.4em] animate-pulse">Initializing Neural Render...</div>
+        </div>
+    );
+
     return (
         <div className="w-full h-full bg-[#020617]/50 rounded-[2rem] overflow-hidden">
             <Canvas shadows gl={{ preserveDrawingBuffer: true, antialias: true }}>

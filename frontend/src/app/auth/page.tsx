@@ -21,6 +21,10 @@ export default function AuthPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
+    const [specialization, setSpecialization] = useState("");
+    const [licenseNumber, setLicenseNumber] = useState("");
+    const [clinicName, setClinicName] = useState("");
+    const [workingHours, setWorkingHours] = useState("");
 
     const { setUserRole } = useSettings();
     const router = useRouter();
@@ -35,6 +39,9 @@ export default function AuthPage() {
         if (!email.includes("@")) return "Please enter a valid neural address (email).";
         if (password.length < 6) return "Security key must be at least 6 characters.";
         if (!isLogin && !fullName) return "Identity name is required for registration.";
+        if (!isLogin && role === 'doctor' && (!specialization || !licenseNumber || !clinicName || !workingHours)) {
+            return "All full day details are required for doctor registration.";
+        }
         return null;
     };
 
@@ -50,17 +57,59 @@ export default function AuthPage() {
 
         setIsLoading(true);
 
-        // For Credentials login (requires custom backend logic in authOptions)
-        // For now, we'll keep the mock redirect but note that Google is now 'actual'
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            if (isLogin) {
+                const res = await signIn("credentials", {
+                    redirect: false,
+                    email,
+                    password,
+                });
 
-        setIsLoading(false);
-        setShowSuccess(true);
-        setUserRole(role);
+                if (res?.error) {
+                    setError(res.error);
+                } else {
+                    setShowSuccess(true);
+                    setTimeout(() => router.push("/dashboard"), 2000);
+                }
+            } else {
+                const res = await fetch('http://localhost:5001/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: fullName,
+                        email,
+                        password,
+                        role: role.charAt(0).toUpperCase() + role.slice(1),
+                        specialization,
+                        licenseNumber,
+                        clinicName,
+                        workingHours
+                    })
+                });
 
-        setTimeout(() => {
-            router.push("/dashboard");
-        }, 2000);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    setError(data.message || "Registration failed.");
+                } else {
+                    setShowSuccess(true);
+                    setUserRole(role);
+                    setTimeout(() => {
+                        if (role === 'doctor') {
+                            setIsLogin(true);
+                            setShowSuccess(false);
+                            setError("Account created. Please wait for admin approval before logging in.");
+                        } else {
+                            router.push("/dashboard");
+                        }
+                    }, 2000);
+                }
+            }
+        } catch (err) {
+            setError("Neural link failed. Verify connection status.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGoogleAuth = async () => {
@@ -293,6 +342,55 @@ export default function AuthPage() {
                                                             className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
                                                         />
                                                     </div>
+
+                                                    {role === 'doctor' && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            className="space-y-4 pt-2"
+                                                        >
+                                                            <div className="relative group">
+                                                                <Microscope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#00D1FF] transition-colors" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    value={specialization}
+                                                                    onChange={(e) => setSpecialization(e.target.value)}
+                                                                    placeholder="Area of Specialization"
+                                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
+                                                                />
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#00D1FF] transition-colors" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    value={licenseNumber}
+                                                                    onChange={(e) => setLicenseNumber(e.target.value)}
+                                                                    placeholder="Medical License Number"
+                                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
+                                                                />
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#00D1FF] transition-colors" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    value={clinicName}
+                                                                    onChange={(e) => setClinicName(e.target.value)}
+                                                                    placeholder="Hospital/Clinic Affiliation"
+                                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
+                                                                />
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#00D1FF] transition-colors" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    value={workingHours}
+                                                                    onChange={(e) => setWorkingHours(e.target.value)}
+                                                                    placeholder="Working Hours (e.g. 09:00 - 18:00)"
+                                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
+                                                                />
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, ChevronRight, ChevronLeft, Activity, Bone, AlertCircle, CheckCircle2, Search, Zap, ShieldCheck, Microscope, Scan, Info, Brain, WifiOff, Sparkles, SplitSquareVertical, Database, Users, HeartPulse, Stethoscope, Droplets, Syringe, Pill, ClipboardList, Thermometer, Dna, Waves } from "lucide-react";
-import HeroScene from "@/components/animations/Model";
-import HandScene from "@/components/animations/HandScene";
-import BrainScene from "@/components/animations/BrainScene";
-import ThoraxScene from "@/components/animations/ThoraxScene";
-import KneeScene from "@/components/animations/KneeScene";
-import SpineScene from "@/components/animations/SpineScene";
+import dynamic from "next/dynamic";
+
+const HeroScene = dynamic(() => import("@/components/animations/Model"), { ssr: false });
+const HandScene = dynamic(() => import("@/components/animations/HandScene"), { ssr: false });
+const BrainScene = dynamic(() => import("@/components/animations/BrainScene"), { ssr: false });
+const ThoraxScene = dynamic(() => import("@/components/animations/ThoraxScene"), { ssr: false });
+const KneeScene = dynamic(() => import("@/components/animations/KneeScene"), { ssr: false });
+const SpineScene = dynamic(() => import("@/components/animations/SpineScene"), { ssr: false });
 
 import MedicalGlossary from "@/components/dashboard/MedicalGlossary";
 import { useSettings } from "@/context/SettingsContext";
@@ -49,6 +51,14 @@ function LiveNeuralFeed() {
 }
 
 export default function Dashboard() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#00D1FF] font-black uppercase tracking-[0.3em] animate-pulse">Initializing Neural Interface...</div>}>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+
+function DashboardContent() {
     const { isRuralMode, isPrivacyMode, userRole, t } = useSettings();
     const searchParams = useSearchParams();
 

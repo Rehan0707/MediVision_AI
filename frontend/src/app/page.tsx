@@ -2,7 +2,8 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Brain, Activity, Bone, FlaskConical, ChevronRight, ShieldCheck, Microscope, Zap, ArrowRight, CheckCircle2, Globe2, Play } from "lucide-react";
-import DoctorBot from "@/components/animations/DoctorBot";
+import dynamic from "next/dynamic";
+const DoctorBot = dynamic(() => import("@/components/animations/DoctorBot"), { ssr: false });
 import Link from "next/link";
 import { useRef } from "react";
 

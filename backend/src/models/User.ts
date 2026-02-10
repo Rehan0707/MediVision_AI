@@ -6,6 +6,11 @@ export interface IUser extends Document {
     email: string;
     role: 'Patient' | 'Doctor' | 'Admin';
     password?: string;
+    isApproved: boolean;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    patientProfile?: mongoose.Types.ObjectId;
+    doctorProfile?: mongoose.Types.ObjectId;
+    adminProfile?: mongoose.Types.ObjectId;
     comparePassword: (password: string) => Promise<boolean>;
 }
 
@@ -14,6 +19,11 @@ const UserSchema: Schema = new Schema({
     email: { type: String, required: true, unique: true },
     role: { type: String, enum: ['Patient', 'Doctor', 'Admin'], default: 'Patient' },
     password: { type: String },
+    isApproved: { type: Boolean, default: false },
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+    patientProfile: { type: Schema.Types.ObjectId, ref: 'Patient' },
+    doctorProfile: { type: Schema.Types.ObjectId, ref: 'Doctor' },
+    adminProfile: { type: Schema.Types.ObjectId, ref: 'Admin' },
 }, { timestamps: true });
 
 UserSchema.pre<IUser>('save', async function () {
