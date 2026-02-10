@@ -5,12 +5,15 @@
     "main": "src/index.ts",
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+        "worker": "ts-node src/workers/ecgWorker.ts",
         "build": "tsc",
         "start": "node dist/index.js",
         "lint": "eslint . --ext .ts"
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
+        "@types/amqplib": "^0.10.8",
+        "amqplib": "^0.10.9",
         "bcryptjs": "^3.0.3",
         "cors": "^2.8.5",
         "dotenv": "^16.4.5",

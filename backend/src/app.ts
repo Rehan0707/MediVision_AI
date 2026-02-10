@@ -5,6 +5,9 @@ import morgan from 'morgan';
 import scanRoutes from './routes/scanRoutes';
 import aiRoutes from './routes/aiRoutes';
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
+
+import reportRoutes from './routes/reportRoutes';
 
 const app = express();
 
@@ -18,6 +21,8 @@ app.use(express.json({ limit: '50mb' })); // Increased limit for image uploads
 app.use('/api/scans', scanRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

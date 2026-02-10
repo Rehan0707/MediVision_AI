@@ -14,6 +14,8 @@ interface EcgResult {
     summary: string;
     confidence: number;
     heartRateBpm: number;
+    spo2?: number;
+    temperature?: number;
 }
 
 function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (result: EcgResult) => void }) {
@@ -165,14 +167,24 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
 
 export default function SignalsPage() {
     const { isPrivacyMode } = useSettings();
-    const [heartRate, setHeartRate] = useState(72);
-    const [spo2, setSpo2] = useState(98.4);
-    const [temp, setTemp] = useState(36.6);
+    const [heartRate, setHeartRate] = useState(0);
+    const [spo2, setSpo2] = useState(0);
+    const [temp, setTemp] = useState(0);
     const [waveType, setWaveType] = useState<"ECG" | "EEG" | "EMG">("ECG");
     const [analysisStatus, setAnalysisStatus] = useState<EcgResult | null>(null);
+
+    const handleAnalysisComplete = (result: EcgResult) => {
+        setAnalysisStatus(result);
+        if (result.heartRateBpm) setHeartRate(result.heartRateBpm);
+        if (result.spo2) setSpo2(result.spo2);
+        if (result.temperature) setTemp(result.temperature);
+    };
+
     const [isExporting, setIsExporting] = useState(false);
 
     // Simulate real-time signal drift
+    // Simulate real-time signal drift
+    /* 
     useEffect(() => {
         const interval = setInterval(() => {
             setHeartRate(h => {
@@ -185,13 +197,14 @@ export default function SignalsPage() {
         }, 1000);
         return () => clearInterval(interval);
     }, []);
+    */
 
     const handleDownloadLogs = () => {
         setIsExporting(true);
         setTimeout(() => {
             const logs = {
                 timestamp: new Date().toISOString(),
-                patientId: "JD-992",
+                patientId: "SELF-AUTH",
                 metrics: { heartRate, spo2, temp },
                 analysis: analysisStatus || "Baseline scan only",
                 waveType
@@ -247,8 +260,8 @@ export default function SignalsPage() {
                         <div className="h-64 w-full relative mb-8 flex items-center justify-center overflow-hidden rounded-3xl bg-black/60 border border-white/10 shadow-inner">
                             <div className="absolute inset-0 opacity-20 medical-grid" />
                             <div className="absolute top-4 left-6 flex items-center gap-2 z-10">
-                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Live Lead II • {waveType} Mode</span>
+                                <div className="w-2 h-2 rounded-full bg-slate-500" />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Signal Offline • {waveType} Mode</span>
                             </div>
 
                             <AnimatePresence mode="wait">
@@ -270,28 +283,28 @@ export default function SignalsPage() {
                             <SignalMetric
                                 icon={<Heart className="text-red-400" size={18} />}
                                 label="Heart Rate"
-                                value={`${Math.round(heartRate)}`}
+                                value={heartRate > 0 ? `${Math.round(heartRate)}` : "--"}
                                 unit="BPM"
                                 trend="stable"
                             />
                             <SignalMetric
                                 icon={<Droplets className="text-blue-400" size={18} />}
                                 label="O₂ Saturation"
-                                value={`${spo2.toFixed(1)}`}
+                                value={spo2 > 0 ? `${spo2.toFixed(1)}` : "--"}
                                 unit="%"
-                                trend="up"
+                                trend="stable"
                             />
                             <SignalMetric
                                 icon={<Thermometer className="text-orange-400" size={18} />}
                                 label="Surface Temp"
-                                value={`${temp.toFixed(1)}`}
+                                value={temp > 0 ? `${temp.toFixed(1)}` : "--"}
                                 unit="°C"
                                 trend="stable"
                             />
                         </div>
                     </div>
 
-                    <EcgAnalysisSection onAnalysisComplete={setAnalysisStatus} />
+                    <EcgAnalysisSection onAnalysisComplete={handleAnalysisComplete} />
 
                     <div className="p-10 rounded-[3rem] glass-card border-[#7000FF]/10 bg-[#7000FF]/[0.02] relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -330,12 +343,12 @@ export default function SignalsPage() {
                 <div className="space-y-8">
                     <div className="p-8 rounded-[2.5rem] glass-morphism border-white/5 bg-white/[0.01]">
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <Activity size={12} className="text-[#00D1FF]" />
+                            <Activity size={12} className="text-slate-600" />
                             Device Sync
                         </h4>
                         <div className="space-y-4">
-                            <DeviceItem name="MediLink Implant v2" status="connected" battery={88} />
-                            <DeviceItem name="Vitals Patch Alpha" status="connected" battery={42} />
+                            <DeviceItem name="MediLink Implant v2" status="searching" />
+                            <DeviceItem name="Vitals Patch Alpha" status="searching" />
                             <DeviceItem name="Neural Crown 4" status="searching" />
                         </div>
                     </div>
@@ -373,10 +386,10 @@ export default function SignalsPage() {
                         <div className="space-y-2">
                             <div className="flex justify-between text-[10px] font-bold">
                                 <span className="text-slate-400">SYNC STABILITY</span>
-                                <span className="text-[#00D1FF]">98.2%</span>
+                                <span className="text-slate-600">OFFLINE</span>
                             </div>
                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                <motion.div initial={{ width: 0 }} animate={{ width: "98.2%" }} className="h-full bg-[#00D1FF]" />
+                                <motion.div initial={{ width: 0 }} animate={{ width: "0%" }} className="h-full bg-slate-700" />
                             </div>
                         </div>
                     </div>

@@ -1,15 +1,24 @@
 "use client";
 
-import { Search, User, Wifi, WifiOff, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Search, User, Wifi, WifiOff, ShieldCheck, ShieldAlert, LogOut } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
+import { useState } from "react";
+import { ProfileModal } from "../dashboard/ProfileModal";
+import { useSession, signOut } from "next-auth/react";
 
 export function Header() {
+    const { data: session } = useSession();
     const {
         isRuralMode, setIsRuralMode,
         isPrivacyMode, setIsPrivacyMode,
         language, setLanguage,
         userRole, setUserRole, t
     } = useSettings();
+
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    const user = session?.user as any;
+    const displayName = user?.name || (userRole === 'doctor' ? 'Dr. Rehan S.' : userRole === 'admin' ? 'Administrator' : 'Active Patient');
 
     const getRoleName = () => {
         switch (userRole) {
@@ -27,7 +36,7 @@ export function Header() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                     <input
                         type="text"
-                        placeholder="Search vaults..."
+                        placeholder="Search my records..."
                         className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium"
                     />
                 </div>
@@ -36,7 +45,7 @@ export function Header() {
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 ml-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${userRole === 'admin' ? 'bg-[#7000FF]' : userRole === 'doctor' ? 'bg-[#00D1FF]' : 'bg-slate-500'} animate-pulse`} />
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            Neural Node: <span className="text-white">{userRole}</span>
+                            Access Level: <span className="text-white">{userRole}</span>
                         </span>
                     </div>
 
@@ -88,19 +97,32 @@ export function Header() {
                 <div className="flex items-center gap-4 pl-6 border-l border-white/10 ml-2">
                     <div className="text-right hidden sm:block">
                         <p className={`text-sm font-black tracking-tight ${isPrivacyMode ? 'patient-data' : ''}`}>
-                            {userRole === 'doctor' ? 'Dr. Rehan S.' : userRole === 'admin' ? 'Administrator' : 'Patient JD-992'}
+                            {displayName}
                         </p>
                         <p className="text-[10px] text-[#00D1FF] uppercase tracking-[0.3em] font-black">
-                            {getRoleName()}
+                            {user?.role ? `${user.role} Portal` : getRoleName()}
                         </p>
                     </div>
-                    <button className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#00D1FF] to-[#7000FF] p-[1px] group shadow-lg shadow-[#00D1FF]/20">
+                    <button
+                        onClick={() => setIsProfileOpen(true)}
+                        className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#00D1FF] to-[#7000FF] p-[1px] group shadow-lg shadow-[#00D1FF]/20 hover:scale-105 transition-all"
+                    >
                         <div className="w-full h-full rounded-[15px] bg-[#020617] flex items-center justify-center overflow-hidden">
                             <User size={24} className="text-[#00D1FF]" />
                         </div>
                     </button>
+                    {session && (
+                        <button
+                            onClick={() => signOut({ callbackUrl: '/auth' })}
+                            className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all"
+                            title="Sign Out"
+                        >
+                            <LogOut size={20} />
+                        </button>
+                    )}
                 </div>
             </div>
+            <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
         </header>
     );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, ChevronRight, ChevronLeft, Activity, Bone, AlertCircle, CheckCircle2, Search, Zap, ShieldCheck, Microscope, Scan, Info, Brain, WifiOff, Sparkles, SplitSquareVertical, Database, Users, HeartPulse, Stethoscope, Droplets, Syringe, Pill, ClipboardList, Thermometer, Dna, Waves } from "lucide-react";
+import { Upload, FileText, ChevronRight, ChevronLeft, Activity, Bone, AlertCircle, CheckCircle2, Search, Zap, ShieldCheck, Microscope, Scan, Info, Brain, WifiOff, Sparkles, SplitSquareVertical, Database, Users, HeartPulse, Stethoscope, Droplets, Syringe, Pill, ClipboardList, Thermometer, Dna, Waves, AlertTriangle, X } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const HeroScene = dynamic(() => import("@/components/animations/Model"), { ssr: false });
@@ -11,6 +11,7 @@ const BrainScene = dynamic(() => import("@/components/animations/BrainScene"), {
 const ThoraxScene = dynamic(() => import("@/components/animations/ThoraxScene"), { ssr: false });
 const KneeScene = dynamic(() => import("@/components/animations/KneeScene"), { ssr: false });
 const SpineScene = dynamic(() => import("@/components/animations/SpineScene"), { ssr: false });
+const BoneScene = dynamic(() => import("@/components/animations/BoneScene"), { ssr: false });
 
 import MedicalGlossary from "@/components/dashboard/MedicalGlossary";
 import { useSettings } from "@/context/SettingsContext";
@@ -24,19 +25,17 @@ import { runLocalInference, MLResult } from "@/lib/ml/engine";
 
 function LiveNeuralFeed() {
     const feeds = [
-        "SYNAPSE-V4: 3D Reconstruction Latency < 1.2s",
-        "ENCRYPTION: AES-256 Rotation Success",
-        "NODE-SG1: New Peer Handshake Initialized",
-        "DIAGNOSTIC: Volumetric Mesh Verified (CONF: 98.4%)",
-        "SYSTEM: E2E Neural Tunnel Established",
-        "PROTOCOL: HIPAA-Compliance Heartbeat Recorded",
+        "SYSTEM: Neural Interface Synchronized",
+        "SECURITY: AES-256 Vault Active",
+        "CONNECTIVITY: Clinical Node SG-1 Online",
+        "READY: Awaiting Diagnostic Input",
     ];
 
     return (
         <div className="w-full bg-[#00D1FF]/5 border-y border-[#00D1FF]/10 py-2 overflow-hidden whitespace-nowrap relative">
             <motion.div
                 animate={{ x: ["0%", "-50%"] }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
                 className="inline-flex gap-20 items-center"
             >
                 {[...feeds, ...feeds].map((text, i) => (
@@ -71,6 +70,7 @@ function DashboardContent() {
     const [isComparing, setIsComparing] = useState(false);
     const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
     const [aiResponse, setAiResponse] = useState<string | null>(null);
+    const [modalityMismatch, setModalityMismatch] = useState<string | null>(null);
     const [detectedPart, setDetectedPart] = useState<string>("hand");
     const [currentScanImage, setCurrentScanImage] = useState<string>("/scans/hand_active_scan.png");
     const [hasIssue, setHasIssue] = useState(false);
@@ -86,11 +86,35 @@ function DashboardContent() {
     const [viewMode, setViewMode] = useState<'3d' | 'slice'>('3d');
     const [isScheduling, setIsScheduling] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch('/api/users/profile');
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfile(data);
+                }
+            } catch (err) {
+                console.error("Profile fetch failed:", err);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     useEffect(() => {
         const modality = searchParams.get("modality");
         if (modality) {
             setSelectedModality(modality);
+            // Contextual Defaults based on Modality
+            if (modality === 'ct' || modality === 'mri') {
+                setDetectedPart('brain');
+                setCurrentScanImage('/scans/brain_scan_active.png');
+            } else if (modality === 'xray') {
+                setDetectedPart('chest');
+                setCurrentScanImage('/scans/chest_xray_active.png');
+            }
         }
     }, [searchParams]);
 
@@ -98,23 +122,23 @@ function DashboardContent() {
         {
             category: "Imaging & Radiology",
             items: [
-                { id: "xray", name: "X-RAY 3D", icon: <Bone size={24} />, description: "Bone architecture analysis.", color: "text-[#00D1FF]", bg: "bg-[#00D1FF]/5", border: "border-[#00D1FF]/20" },
-                { id: "mri", name: "MRI 3D", icon: <Brain size={24} />, description: "Neural & soft tissue scan.", color: "text-[#7000FF]", bg: "bg-[#7000FF]/5", border: "border-[#7000FF]/20" },
-                { id: "ct", name: "CT SCAN 3D", icon: <Scan size={24} />, description: "Cross-sectional mapping.", color: "text-emerald-400", bg: "bg-emerald-400/5", border: "border-emerald-400/20" },
-                { id: "ultrasound", name: "Ultrasound", icon: <Waves size={24} />, description: "High-frequency wave imaging.", color: "text-blue-400", bg: "bg-blue-400/5", border: "border-blue-400/20" },
-                { id: "pet", name: "PET Scan", icon: <Activity size={24} />, description: "Metabolic pathway tracking.", color: "text-rose-400", bg: "bg-rose-400/5", border: "border-rose-400/20" },
-                { id: "mammography", name: "Mammography", icon: <Microscope size={24} />, description: "Breast tissue density audit.", color: "text-pink-400", bg: "bg-pink-400/5", border: "border-pink-400/20" }
+                { id: "xray", name: "X-RAY 3D", icon: <Bone size={24} />, description: "Check for bone issues.", color: "text-[#00D1FF]", bg: "bg-[#00D1FF]/5", border: "border-[#00D1FF]/20" },
+                { id: "mri", name: "MRI 3D", icon: <Brain size={24} />, description: "Brain and tissue check.", color: "text-[#7000FF]", bg: "bg-[#7000FF]/5", border: "border-[#7000FF]/20" },
+                { id: "ct", name: "CT SCAN 3D", icon: <Scan size={24} />, description: "Detailed internal scan.", color: "text-emerald-400", bg: "bg-emerald-400/5", border: "border-emerald-400/20" },
+                { id: "ultrasound", name: "Sonography (Ultrasound)", icon: <Waves size={24} />, description: "High-frequency wave imaging.", color: "text-blue-400", bg: "bg-blue-400/5", border: "border-blue-400/20" },
+                { id: "pet", name: "PET Scan", icon: <Activity size={24} />, description: "Check body functions.", color: "text-rose-400", bg: "bg-rose-400/5", border: "border-rose-400/20" },
+                { id: "mammography", name: "Mammography", icon: <Microscope size={24} />, description: "Breast tissue density check.", color: "text-pink-400", bg: "bg-pink-400/5", border: "border-pink-400/20" }
             ]
         },
         {
             category: "Laboratory & Bloodwork",
             items: [
-                { id: "blood", name: "Blood Tests (CBC)", icon: <Droplets size={24} />, description: "Biochemical marker parsing.", color: "text-red-400", bg: "bg-red-400/5", border: "border-red-400/20" },
-                { id: "urine", name: "Urine Analysis", icon: <Syringe size={24} />, description: "Metabolic byproduct audit.", color: "text-yellow-400", bg: "bg-yellow-400/5", border: "border-yellow-400/20" },
-                { id: "lft", name: "Liver Function (LFT)", icon: <Activity size={24} />, description: "Hepatic enzyme evaluation.", color: "text-orange-400", bg: "bg-orange-400/5", border: "border-orange-400/20" },
-                { id: "kft", name: "Kidney Function (KFT)", icon: <Zap size={24} />, description: "Renal filtration metrics.", color: "text-indigo-400", bg: "bg-indigo-400/5", border: "border-indigo-400/20" },
-                { id: "thyroid", name: "Thyroid Profile", icon: <Stethoscope size={24} />, description: "Endocrine balance mapping.", color: "text-cyan-400", bg: "bg-cyan-400/5", border: "border-cyan-400/20" },
-                { id: "hormone", name: "Hormone Tests", icon: <Thermometer size={24} />, description: "Regulator level analysis.", color: "text-purple-400", bg: "bg-purple-400/5", border: "border-purple-400/20" }
+                { id: "blood", name: "Blood Tests (CBC)", icon: <Droplets size={24} />, description: "Check blood levels.", color: "text-red-400", bg: "bg-red-400/5", border: "border-red-400/20" },
+                { id: "urine", name: "Urine Analysis", icon: <Syringe size={24} />, description: "Kidney and health check.", color: "text-yellow-400", bg: "bg-yellow-400/5", border: "border-yellow-400/20" },
+                { id: "lft", name: "Liver Function (LFT)", icon: <Activity size={24} />, description: "Check liver health.", color: "text-orange-400", bg: "bg-orange-400/5", border: "border-orange-400/20" },
+                { id: "kft", name: "Kidney Function (KFT)", icon: <Zap size={24} />, description: "Check kidney health.", color: "text-indigo-400", bg: "bg-indigo-400/5", border: "border-indigo-400/20" },
+                { id: "thyroid", name: "Thyroid Profile", icon: <Stethoscope size={24} />, description: "Check hormone levels.", color: "text-cyan-400", bg: "bg-cyan-400/5", border: "border-cyan-400/20" },
+                { id: "hormone", name: "Hormone Tests", icon: <Thermometer size={24} />, description: "Check hormone balance.", color: "text-purple-400", bg: "bg-purple-400/5", border: "border-purple-400/20" }
             ]
         },
         {
@@ -155,10 +179,10 @@ function DashboardContent() {
     ];
 
     const getHudTitle = () => {
-        if (detectedPart.includes("brain") || detectedPart.includes("mri") || detectedPart.includes("head")) return "Neural Architecture Analysis";
-        if (detectedPart.includes("hand") || detectedPart.includes("carpal")) return "Metacarpal Architecture";
-        if (detectedPart.includes("chest") || detectedPart.includes("lung")) return "Thoracic Cavity Analysis";
-        return "System Scanning Architecture";
+        if (detectedPart.includes("brain") || detectedPart.includes("mri") || detectedPart.includes("head")) return "Brain Structure Check";
+        if (detectedPart.includes("hand") || detectedPart.includes("carpal")) return "Hand Bone Check";
+        if (detectedPart.includes("chest") || detectedPart.includes("lung")) return "Chest Cavity Check";
+        return "Scan Analysis Tools";
     };
 
     const getHudDescription = () => {
@@ -166,10 +190,10 @@ function DashboardContent() {
             return `${analysisData.preciseAbnormality || "Abnormality"} identified at ${analysisData.preciseLocation || "specified anatomical zone"}. ${analysisData.summary || ""}`;
         }
         if (detectedPart.includes("brain") || detectedPart.includes("mri") || detectedPart.includes("head"))
-            return "Cerebral cortex symmetry verified. Ventricular volumes within expected parameters. No acute intracranial hemorrhage detected.";
+            return "Brain structure looks normal. No bleeding or unusual findings detected.";
         if (detectedPart.includes("hand") || detectedPart.includes("carpal"))
-            return "Phalangeal alignment is symmetric. Carpal joint spaces are preserved. No cortical disruption identified in any of the visible hand structures.";
-        return "Performing multi-voxel cross-reference parsing across diagnostic dataset layers.";
+            return "Hand bones are aligned correctly. No breaks or fractures identified.";
+        return "Scanning and analyzing the medical image for any issues.";
     };
 
     const handleGeminiAnalysis = async (imageData?: string) => {
@@ -185,17 +209,7 @@ function DashboardContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     image: imageToAnalyze,
-                    prompt: `Perform a high-level clinical cross-reference and visual analysis for this medical scan. 
-                    Return ONLY a JSON object with the following structure:
-                    {
-                        "detectedPart": "string (e.g. hand, brain)",
-                        "preciseAbnormality": "string (Identify exact issue, e.g. hairline fracture, tumor, hemorrhage)",
-                        "preciseLocation": "string (Describe precise coordinates or anatomical zone, e.g. third metacarpal distal end, left temporal lobe)",
-                        "findings": ["string", "string"],
-                        "recommendations": ["string"],
-                        "summary": "string",
-                        "confidence": number (0-100)
-                    }`
+                    modality: selectedModality || "xray"
                 })
             });
             const data = await res.json();
@@ -203,6 +217,7 @@ function DashboardContent() {
             setCustomMlResult(customResult);
 
             let parsedData: {
+                detectedModality?: string;
                 detectedPart?: string;
                 preciseAbnormality?: string;
                 preciseLocation?: string;
@@ -212,12 +227,40 @@ function DashboardContent() {
                 confidence?: number;
             };
             try {
-                const jsonStr = data.text.replace(/```json|```/g, '').trim();
-                parsedData = JSON.parse(jsonStr);
+                // Backend now returns the object directly, but checking for text just in case
+                if (data.text) {
+                    const jsonStr = data.text.replace(/```json|```/g, '').trim();
+                    parsedData = JSON.parse(jsonStr);
+                } else {
+                    parsedData = data;
+                }
 
                 if (parsedData.detectedPart) {
+                    console.log("AI Detected Part:", parsedData.detectedPart);
                     setDetectedPart(parsedData.detectedPart.toLowerCase());
                 }
+
+                // Modality Mismatch Detection
+                setModalityMismatch(null);
+                if (parsedData.detectedModality && selectedModality) {
+                    const selected = selectedModality.toLowerCase();
+                    const detected = parsedData.detectedModality.toLowerCase();
+
+                    // Allow broad matches (e.g., Sonography/Ultrasound, X-ray/Bone)
+                    const isMismatch = (
+                        (selected === 'ultrasound' && !detected.includes('sonography') && !detected.includes('ultrasound')) ||
+                        (selected === 'xray' && !detected.includes('x-ray') && !detected.includes('xray')) ||
+                        (selected === 'mri' && !detected.includes('mri')) ||
+                        (selected === 'ct' && !detected.includes('ct'))
+                    );
+
+                    if (isMismatch) {
+                        setModalityMismatch(parsedData.detectedModality);
+                        parsedData.summary = `⚠️ MODALITY WARNING: You selected ${selectedModality.toUpperCase()} but the system detected a ${parsedData.detectedModality.toUpperCase()} image. Please ensure you uploaded the correct file for accurate results.`;
+                        setHasIssue(true); // Treat mismatch as an issue for visibility
+                    }
+                }
+
                 setAiResponse(parsedData.summary ?? null);
                 setAnalysisData(parsedData);
 
@@ -467,7 +510,7 @@ function DashboardContent() {
                                                                     <p className="text-[11px] text-slate-400 leading-relaxed font-medium mb-6">{m.description}</p>
                                                                 </div>
                                                                 <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] ${m.color} mt-auto`}>
-                                                                    {userRole === "doctor" ? "Initialize Clinical 3D" : "Initialize Sensor"} <ChevronRight size={12} />
+                                                                    {userRole === "doctor" ? "Start Specialist Review" : "Start Scan Analysis"} <ChevronRight size={12} />
                                                                 </div>
                                                             </motion.div>
                                                         ))}
@@ -475,79 +518,11 @@ function DashboardContent() {
                                                 </div>
                                             ))}
 
-                                        {/* Unified Intelligence Feed - Role Specific Data below the grid */}
+                                        {/* Dynamic Patient/Doctor Data */}
                                         {userRole === "patient" && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 30 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.5 }}
-                                                className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-20"
-                                            >
-                                                {/* Patient: Health Progress */}
-                                                <div className="p-10 glass-morphism rounded-[3rem] border-white/5 relative overflow-hidden bg-white/[0.01]">
-                                                    <div className="flex justify-between items-start mb-10">
-                                                        <div>
-                                                            <h3 className="text-2xl font-black mb-2 tracking-tight flex items-center gap-3 italic">
-                                                                <Activity className="text-[#00D1FF]" size={22} />
-                                                                Recovery Journey
-                                                            </h3>
-                                                            <p className="text-slate-500 text-sm font-medium">Phase 2: Post-Op Neural Integration</p>
-                                                        </div>
-                                                        <span className="bg-[#00D1FF]/10 text-[#00D1FF] text-[10px] px-4 py-1.5 rounded-full font-black uppercase tracking-widest border border-[#00D1FF]/20">
-                                                            68% Optimal
-                                                        </span>
-                                                    </div>
-                                                    <div className="space-y-6">
-                                                        <div className="h-4 bg-white/5 rounded-full overflow-hidden p-1 border border-white/5">
-                                                            <motion.div
-                                                                initial={{ width: 0 }}
-                                                                animate={{ width: "68%" }}
-                                                                transition={{ duration: 2, ease: "easeOut" }}
-                                                                className="h-full bg-gradient-to-r from-[#00D1FF] to-[#7000FF] rounded-full shadow-[0_0_15px_rgba(0,209,255,0.4)]"
-                                                            />
-                                                        </div>
-                                                        <p className="text-xs text-slate-400 font-medium italic">"Neural stability has improved by 14% since your last upload."</p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Patient: Recent Lab Insights */}
-                                                <div className="p-10 glass-morphism rounded-[3rem] border-white/5 bg-white/[0.01]">
-                                                    <div className="flex justify-between items-center mb-8">
-                                                        <h3 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-3">
-                                                            <FileText className="text-[#7000FF]" size={22} />
-                                                            Recent Bio-Data
-                                                        </h3>
-                                                        <Link href="/dashboard/lab-reports" className="text-[9px] font-black text-[#7000FF] uppercase tracking-widest hover:underline">Full Vault</Link>
-                                                    </div>
-                                                    <div className="space-y-4">
-                                                        {[
-                                                            { type: "Blood Panel", date: "July 12", status: "Analyzed", color: "text-[#00D1FF]" },
-                                                            { type: "Metabolic Fix", date: "May 28", status: "Optimal", color: "text-emerald-400" }
-                                                        ].map((r, i) => (
-                                                            <div key={i} className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.03] border border-white/5">
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400">
-                                                                        <FileText size={18} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-sm font-black text-white">{r.type}</p>
-                                                                        <p className="text-[10px] text-slate-500 font-bold">{r.date} • REB-992</p>
-                                                                    </div>
-                                                                </div>
-                                                                <span className={`text-[9px] font-black uppercase ${r.color}`}>{r.status}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Patient: Vital Metrics */}
-                                                <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-6">
-                                                    <MetricTile label="Blood Glucose" value="98" unit="mg/dL" icon={<Droplets size={16} />} color="text-emerald-400" />
-                                                    <MetricTile label="Neural Latency" value="0.2" unit="ms" icon={<Activity size={16} />} color="text-[#00D1FF]" />
-                                                    <MetricTile label="Body Index" value="22.4" unit="BMI" icon={<Zap size={16} />} color="text-yellow-400" />
-                                                    <MetricTile label="Systolic BP" value="120" unit="mmHg" icon={<HeartPulse size={16} />} color="text-rose-500" />
-                                                </div>
-                                            </motion.div>
+                                            <div className="mt-12">
+                                                <PatientDashboard t={t} profile={profile} />
+                                            </div>
                                         )}
 
                                         {userRole === "doctor" && (
@@ -560,25 +535,15 @@ function DashboardContent() {
                                                 <div className="flex justify-between items-center mb-10">
                                                     <h3 className="text-3xl font-black italic uppercase tracking-tighter flex items-center gap-4">
                                                         <Activity className="text-[#00D1FF]" size={28} />
-                                                        Clinical Operations <span className="text-[#00D1FF]">Real-Time</span>
+                                                        Clinical Operations
                                                     </h3>
                                                     <div className="flex gap-4">
-                                                        <div className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest">System Optimal</div>
-                                                        <div className="px-5 py-2 rounded-full bg-[#00D1FF]/10 border border-[#00D1FF]/20 text-[#00D1FF] text-[9px] font-black uppercase tracking-widest italic">12 Scans Pending</div>
+                                                        <div className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest uppercase">Telemetry Active</div>
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                                                    <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5">
-                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">AI Diagnostic Confidence</p>
-                                                        <p className="text-4xl font-black text-white italic">99.4%</p>
-                                                    </div>
-                                                    <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5">
-                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Average Processing Time</p>
-                                                        <p className="text-4xl font-black text-white italic">1.2<span className="text-lg">s</span></p>
-                                                    </div>
-                                                    <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5">
-                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Neural Syncs</p>
-                                                        <p className="text-4xl font-black text-white italic">4.8k</p>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-slate-500 italic text-sm">
+                                                    <div className="md:col-span-3 p-10 border border-dashed border-white/10 rounded-3xl">
+                                                        Real-time clinical throughput statistics will populate here as scans are processed.
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -632,7 +597,7 @@ function DashboardContent() {
                                                         exit={{ opacity: 0, y: -10 }}
                                                         className="text-center"
                                                     >
-                                                        <p className="text-3xl font-black mb-3 tracking-tighter italic">NEURAL PARSING: {scanProgress}%</p>
+                                                        <p className="text-3xl font-black mb-3 tracking-tighter italic">ANALYZING SCAN: {scanProgress}%</p>
                                                         <div className="w-80 h-2 bg-white/10 rounded-full mx-auto overflow-hidden">
                                                             <motion.div
                                                                 className="h-full bg-[#00D1FF]"
@@ -640,7 +605,12 @@ function DashboardContent() {
                                                                 animate={{ width: `${scanProgress}%` }}
                                                             />
                                                         </div>
-                                                        <p className="text-slate-500 text-[10px] mt-6 uppercase tracking-[0.3em] font-black">Syncing with {selectedModality?.toUpperCase()} Global Database...</p>
+                                                        <p className="text-[#00D1FF] text-[10px] mt-6 uppercase tracking-[0.3em] font-black animate-pulse">
+                                                            {scanProgress < 30 ? "Initializing Scan Sensors..." :
+                                                                scanProgress < 60 ? "Parsing Image Data..." :
+                                                                    scanProgress < 90 ? "Checking Medical Databases..." :
+                                                                        "Finalizing Analysis Result..."}
+                                                        </p>
                                                     </motion.div>
                                                 ) : (
                                                     <motion.div
@@ -747,6 +717,35 @@ function DashboardContent() {
                                                 </div>
                                             </div>
 
+                                            <AnimatePresence>
+                                                {modalityMismatch && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -20 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -20 }}
+                                                        className="absolute top-28 left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl"
+                                                    >
+                                                        <div className="mx-8 p-4 rounded-2xl bg-red-500/20 border border-red-500/50 backdrop-blur-xl flex items-center gap-4 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+                                                            <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white shrink-0 animate-pulse">
+                                                                <AlertTriangle size={24} />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-0.5">Critical Modality Mismatch</p>
+                                                                <p className="text-xs font-bold text-white leading-tight">
+                                                                    You selected <span className="text-red-400 uppercase">{selectedModality}</span> but uploaded what looks like a <span className="text-red-400 uppercase">{modalityMismatch}</span> image.
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => setModalityMismatch(null)}
+                                                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                                            >
+                                                                <X size={16} className="text-white/50" />
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+
                                             <div className="absolute top-28 left-8 z-20">
                                                 <motion.div
                                                     initial={{ opacity: 0, x: -20 }}
@@ -765,10 +764,18 @@ function DashboardContent() {
                                                 {!isRuralMode ? (
                                                     <div className="w-full h-full opacity-80 scale-125">
                                                         {viewMode === '3d' ? (
-                                                            (detectedPart.includes('brain') || detectedPart.includes('mri') || (selectedModality === 'mri' && detectedPart === 'searching')) ? (
+                                                            detectedPart === 'brain' ? (
                                                                 <BrainScene hasIssue={hasIssue} />
-                                                            ) : (detectedPart.includes('spine') || detectedPart.includes('back') || detectedPart.includes('vertebra') || detectedPart.includes('cervical') || (selectedModality === 'ct' && detectedPart === 'searching')) ? (
+                                                            ) : (detectedPart === 'spine' || detectedPart === 'back' || detectedPart === 'vertebra') ? (
                                                                 <SpineScene hasIssue={hasIssue} />
+                                                            ) : (detectedPart === 'thorax' || detectedPart === 'chest' || detectedPart === 'lung' || detectedPart === 'rib') ? (
+                                                                <ThoraxScene hasIssue={hasIssue} />
+                                                            ) : (detectedPart === 'knee' || detectedPart === 'joint' || detectedPart === 'leg') ? (
+                                                                <KneeScene hasIssue={hasIssue} />
+                                                            ) : (detectedPart === 'hand' || detectedPart === 'wrist' || detectedPart === 'finger' || detectedPart === 'carpal') ? (
+                                                                <HandScene hasIssue={hasIssue} />
+                                                            ) : (detectedPart === 'bone' || detectedPart === 'fracture' || selectedModality === 'xray') ? (
+                                                                <BoneScene hasIssue={hasIssue} />
                                                             ) : (
                                                                 <div className="w-full h-full p-20 flex items-center justify-center">
                                                                     <img
@@ -982,7 +989,7 @@ function DashboardContent() {
                             </motion.div>
                         )}
 
-                        <ComparisonModal isOpen={isComparing} onClose={() => setIsComparing(false)} originalImage={currentScanImage} detectedPart={detectedPart} hasIssue={hasIssue} />
+                        <ComparisonModal isOpen={isComparing} onClose={() => setIsComparing(false)} originalImage={currentScanImage} detectedPart={detectedPart} hasIssue={hasIssue} modality={selectedModality} />
 
                         <AnimatePresence>
                             {isScheduling && (

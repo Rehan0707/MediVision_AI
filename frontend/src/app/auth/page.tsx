@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { signIn, useSession } from "next-auth/react";
-import { Brain, ShieldCheck, Mail, Lock, User, UserPlus, LogIn, ChevronRight, Zap, Globe, Microscope, Activity, Eye, EyeOff, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { Brain, ShieldCheck, Mail, Lock, User, UserPlus, LogIn, ChevronRight, Zap, Globe, Microscope, Activity, Eye, EyeOff, CheckCircle2, AlertCircle, Sparkles, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/context/SettingsContext";
@@ -25,22 +25,28 @@ export default function AuthPage() {
     const [licenseNumber, setLicenseNumber] = useState("");
     const [clinicName, setClinicName] = useState("");
     const [workingHours, setWorkingHours] = useState("");
+    const [verificationProof, setVerificationProof] = useState("");
 
     const { setUserRole } = useSettings();
     const router = useRouter();
 
     useEffect(() => {
-        if (status === "authenticated") {
-            router.push("/dashboard");
+        if (status === "authenticated" && session?.user) {
+            const userRole = (session.user as any).role?.toLowerCase();
+            if (userRole === 'admin') {
+                router.push("/dashboard/admin/approval");
+            } else {
+                router.push("/dashboard");
+            }
         }
-    }, [status, router]);
+    }, [status, session, router]);
 
     const validateForm = () => {
         if (!email.includes("@")) return "Please enter a valid neural address (email).";
         if (password.length < 6) return "Security key must be at least 6 characters.";
         if (!isLogin && !fullName) return "Identity name is required for registration.";
-        if (!isLogin && role === 'doctor' && (!specialization || !licenseNumber || !clinicName || !workingHours)) {
-            return "All full day details are required for doctor registration.";
+        if (!isLogin && role === 'doctor' && (!specialization || !licenseNumber || !clinicName || !workingHours || !verificationProof)) {
+            return "All clinical details and verification proof are required.";
         }
         return null;
     };
@@ -69,7 +75,7 @@ export default function AuthPage() {
                     setError(res.error);
                 } else {
                     setShowSuccess(true);
-                    setTimeout(() => router.push("/dashboard"), 2000);
+                    // Redirect logic is handled by useEffect based on session status
                 }
             } else {
                 const res = await fetch('http://localhost:5001/api/auth/register', {
@@ -83,7 +89,8 @@ export default function AuthPage() {
                         specialization,
                         licenseNumber,
                         clinicName,
-                        workingHours
+                        workingHours,
+                        verificationProof
                     })
                 });
 
@@ -99,6 +106,8 @@ export default function AuthPage() {
                             setIsLogin(true);
                             setShowSuccess(false);
                             setError("Account created. Please wait for admin approval before logging in.");
+                        } else if (role === 'admin') {
+                            router.push("/dashboard/admin/approval");
                         } else {
                             router.push("/dashboard");
                         }
@@ -302,7 +311,7 @@ export default function AuthPage() {
                                     <form onSubmit={handleAuth} className="space-y-5">
                                         <div className="mb-6">
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 text-center">Identity Role</p>
-                                            <div className="bg-white/[0.03] p-1 rounded-2xl border border-white/5 grid grid-cols-2 gap-1">
+                                            <div className="bg-white/[0.03] p-1 rounded-2xl border border-white/5 grid grid-cols-3 gap-1">
                                                 <button
                                                     type="button"
                                                     onClick={() => setRole("patient")}
@@ -318,6 +327,14 @@ export default function AuthPage() {
                                                 >
                                                     <Brain size={14} />
                                                     Doctor
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRole("admin")}
+                                                    className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${role === 'admin' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-white'}`}
+                                                >
+                                                    <Shield size={14} />
+                                                    Admin
                                                 </button>
                                             </div>
                                         </div>
@@ -386,6 +403,16 @@ export default function AuthPage() {
                                                                     value={workingHours}
                                                                     onChange={(e) => setWorkingHours(e.target.value)}
                                                                     placeholder="Working Hours (e.g. 09:00 - 18:00)"
+                                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
+                                                                />
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#00D1FF] transition-colors" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    value={verificationProof}
+                                                                    onChange={(e) => setVerificationProof(e.target.value)}
+                                                                    placeholder="Licence Proof / Certificate URL"
                                                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF]/50 transition-all font-medium placeholder:text-slate-600"
                                                                 />
                                                             </div>

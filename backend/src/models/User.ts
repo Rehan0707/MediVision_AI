@@ -8,6 +8,8 @@ export interface IUser extends Document {
     password?: string;
     isApproved: boolean;
     status: 'Pending' | 'Approved' | 'Rejected';
+    phoneNumber?: string;
+    avatar?: string;
     patientProfile?: mongoose.Types.ObjectId;
     doctorProfile?: mongoose.Types.ObjectId;
     adminProfile?: mongoose.Types.ObjectId;
@@ -21,6 +23,8 @@ const UserSchema: Schema = new Schema({
     password: { type: String },
     isApproved: { type: Boolean, default: false },
     status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+    phoneNumber: { type: String },
+    avatar: { type: String },
     patientProfile: { type: Schema.Types.ObjectId, ref: 'Patient' },
     doctorProfile: { type: Schema.Types.ObjectId, ref: 'Doctor' },
     adminProfile: { type: Schema.Types.ObjectId, ref: 'Admin' },

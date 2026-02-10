@@ -84,8 +84,8 @@ export default function Home() {
               transition={{ delay: 0.3, duration: 0.8 }}
               className="text-7xl md:text-[6.5rem] font-black tracking-tighter mb-10 leading-[0.9] text-white"
             >
-              Visualize <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00D1FF] to-[#7000FF] italic">Insight.</span>
+              Understand Your <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00D1FF] to-[#7000FF] italic">Health.</span>
             </motion.h1>
 
             <motion.p
@@ -104,7 +104,7 @@ export default function Home() {
               className="flex flex-wrap gap-6"
             >
               <Link href="/auth" className="group px-12 py-6 rounded-2xl bg-[#00D1FF] text-black font-black hover:scale-105 active:scale-95 transition-all flex items-center gap-4 shadow-[0_20px_40px_rgba(0,209,255,0.2)]">
-                ENTER PLATFORM
+                OPEN DASHBOARD
                 <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
               </Link>
               <Link
@@ -235,14 +235,14 @@ export default function Home() {
             />
             <FeatureCard
               icon={<Activity className="text-emerald-400" size={28} />}
-              title="Signal Intelligence"
-              description="Pattern recognition and simple explanations for ECG, BP, and SpO₂ data."
+              title="Heart & Vitals"
+              description="Simple explanations for your heart rate and other vital signs."
               delay={0.2}
             />
             <FeatureCard
               icon={<FlaskConical className="text-[#7000FF]" size={28} />}
-              title="Report Machine Reading"
-              description="Automatic jargon removal and highlight of abnormal lab values."
+              title="Understand My Reports"
+              description="Automatic jargon removal and highlights for your lab results."
               delay={0.3}
             />
             <FeatureCard

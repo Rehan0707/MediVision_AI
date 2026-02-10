@@ -52,6 +52,8 @@ export const authOptions: NextAuthOptions = {
                 token.role = (user as any).role;
                 token.status = (user as any).status;
                 token.isApproved = (user as any).isApproved;
+                token.profile = (user as any).profile;
+                token.accessToken = (user as any).token; // This is the JWT from the backend
             }
             return token;
         },
@@ -60,6 +62,8 @@ export const authOptions: NextAuthOptions = {
                 (session.user as any).role = token.role;
                 (session.user as any).status = token.status;
                 (session.user as any).isApproved = token.isApproved;
+                (session.user as any).profile = token.profile;
+                (session.user as any).accessToken = token.accessToken;
             }
             return session;
         },

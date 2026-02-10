@@ -12,20 +12,23 @@ function Rib({ index, side }: { index: number; side: "left" | "right" }) {
         const factor = isRight ? 1 : -1;
 
         // Create a realistic rib curve
-        points.push(new THREE.Vector3(0, (index - 5) * 0.4, -0.4)); // Spine connection
-        points.push(new THREE.Vector3(1.4 * factor, (index - 5) * 0.4 + 0.1, 0.6)); // Side curve
-        points.push(new THREE.Vector3(0.3 * factor, (index - 5) * 0.4 - 0.2, 1.2)); // Front connection
+        points.push(new THREE.Vector3(0, (index - 5) * 0.45, -0.6)); // Spine connection
+        points.push(new THREE.Vector3(1.6 * factor, (index - 5) * 0.45 + 0.15, 0.4)); // Side curve
+        points.push(new THREE.Vector3(0.4 * factor, (index - 5) * 0.45 - 0.25, 1.4)); // Front connection
 
         return new THREE.CatmullRomCurve3(points);
     }, [index, side]);
 
     return (
         <mesh castShadow>
-            <tubeGeometry args={[curve, 24, 0.09, 12, false]} />
-            <meshStandardMaterial
-                color="#fffcf5"
-                roughness={0.4}
-                metalness={0.05}
+            <tubeGeometry args={[curve, 32, 0.11, 16, false]} />
+            <meshPhysicalMaterial
+                color="#fdfcf0"
+                roughness={0.2}
+                metalness={0.1}
+                clearcoat={0.4}
+                transmission={0.1}
+                thickness={0.5}
             />
         </mesh>
     );
@@ -33,16 +36,16 @@ function Rib({ index, side }: { index: number; side: "left" | "right" }) {
 
 function Sternum() {
     return (
-        <group position={[0, -0.5, 1.2]}>
+        <group position={[0, -0.5, 1.4]}>
             {/* Manubrium */}
-            <mesh position={[0, 1.2, 0]} castShadow>
-                <capsuleGeometry args={[0.22, 0.3, 4, 16]} />
-                <meshStandardMaterial color="#fffcf5" roughness={0.4} />
+            <mesh position={[0, 1.3, 0]} castShadow>
+                <capsuleGeometry args={[0.25, 0.4, 8, 16]} />
+                <meshPhysicalMaterial color="#fdfcf0" roughness={0.2} transmission={0.1} />
             </mesh>
             {/* Body of sternum */}
-            <mesh position={[0, -0.2, 0]} castShadow>
-                <capsuleGeometry args={[0.16, 1.6, 4, 16]} />
-                <meshStandardMaterial color="#fffcf5" roughness={0.4} />
+            <mesh position={[0, -0.1, 0]} castShadow>
+                <capsuleGeometry args={[0.18, 1.8, 8, 16]} />
+                <meshPhysicalMaterial color="#fdfcf0" roughness={0.2} transmission={0.1} />
             </mesh>
         </group>
     );

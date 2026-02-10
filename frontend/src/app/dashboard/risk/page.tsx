@@ -88,7 +88,7 @@ export default function RiskSentinelPage() {
 
     const handleExportProfile = () => {
         const profile = {
-            subject: "Patient ID: JD-992",
+            subject: "Subject: Active Patient Analysis",
             timestamp: lastSync.toISOString(),
             riskAnalysis: scannedRegions,
             accuracy: 98.4,
@@ -285,8 +285,8 @@ export default function RiskSentinelPage() {
                                     onMouseEnter={() => setHoveredRisk(risk.id)}
                                     onMouseLeave={() => setHoveredRisk(null)}
                                     className={`p-8 rounded-[2.5rem] border transition-all cursor-pointer group ${hoveredRisk === risk.id
-                                            ? 'bg-[#00D1FF]/10 border-[#00D1FF]/40 shadow-[0_0_30px_rgba(0,209,255,0.1)]'
-                                            : 'bg-white/[0.02] border-white/5 hover:border-white/10'
+                                        ? 'bg-[#00D1FF]/10 border-[#00D1FF]/40 shadow-[0_0_30px_rgba(0,209,255,0.1)]'
+                                        : 'bg-white/[0.02] border-white/5 hover:border-white/10'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-6">
@@ -295,8 +295,8 @@ export default function RiskSentinelPage() {
                                             <risk.icon size={24} />
                                         </div>
                                         <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${risk.severity === 'medium' ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5' :
-                                                risk.severity === 'high' ? 'text-red-500 border-red-500/20 bg-red-500/5' :
-                                                    'text-emerald-500 border-emerald-500/20 bg-emerald-500/5'
+                                            risk.severity === 'high' ? 'text-red-500 border-red-500/20 bg-red-500/5' :
+                                                'text-emerald-500 border-emerald-500/20 bg-emerald-500/5'
                                             }`}>
                                             {risk.severity === 'medium' ? 'Mod-Risk' : risk.severity === 'high' ? 'High-Risk' : 'Low-Risk'}
                                         </div>

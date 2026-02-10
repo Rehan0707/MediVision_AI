@@ -9,6 +9,7 @@ export interface IDoctor extends Document {
     experience: number;
     education?: string;
     verified: boolean;
+    verificationProof?: string;
 }
 
 const DoctorSchema: Schema = new Schema({
@@ -20,6 +21,7 @@ const DoctorSchema: Schema = new Schema({
     experience: { type: Number, default: 0 },
     education: { type: String },
     verified: { type: Boolean, default: false },
+    verificationProof: { type: String },
 }, { timestamps: true });
 
 export default mongoose.model<IDoctor>('Doctor', DoctorSchema);

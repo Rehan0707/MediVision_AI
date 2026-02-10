@@ -61,28 +61,52 @@ function InjuryHotspot({ position, label, isActive }: { position: [number, numbe
     );
 }
 
-function StylizedBone({ hotspots = [], activeHotspotId }: { hotspots?: HotspotData[], activeHotspotId?: string | null }) {
+function StylizedBone({ hotspots = [], activeHotspotId, hasIssue }: { hotspots?: HotspotData[], activeHotspotId?: string | null, hasIssue?: boolean }) {
+    const pulseRef = useRef<THREE.Group>(null);
+
+    useFrame((state) => {
+        if (pulseRef.current) {
+            const pulse = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.5;
+            pulseRef.current.traverse((child) => {
+                if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshPhysicalMaterial) {
+                    child.material.emissiveIntensity = pulse * 0.2;
+                }
+            });
+        }
+    });
+
     return (
-        <group rotation={[0, 0, Math.PI / 6]}>
+        <group ref={pulseRef} rotation={[0, 0, Math.PI / 8]}>
+            {/* Main Shaft - Using Capsule for organic taper */}
             <mesh position={[0, 0, 0]} castShadow>
-                <cylinderGeometry args={[0.35, 0.35, 3.5, 32]} />
-                <meshStandardMaterial
-                    color="#f1f5f9"
-                    roughness={0.2}
-                    metalness={0.1}
+                <capsuleGeometry args={[0.3, 2.8, 8, 32]} />
+                <meshPhysicalMaterial
+                    color="#fdfcf0"
+                    roughness={0.15}
+                    metalness={0.05}
+                    clearcoat={0.5}
+                    clearcoatRoughness={0.1}
+                    transmission={0.1}
+                    thickness={1}
+                    ior={1.5}
+                    emissive="#ffffff"
+                    emissiveIntensity={0}
                 />
             </mesh>
 
             <Scanline />
 
-            <mesh position={[0, 1.75, 0]} castShadow>
-                <sphereGeometry args={[0.55, 32, 32]} />
-                <meshStandardMaterial color="#f1f5f9" roughness={0.3} />
+            {/* Proximal Epiphysis (Head) */}
+            <mesh position={[0, 1.6, 0]} rotation={[0, 0.2, 0.4]} scale={[1.2, 0.8, 1]} castShadow>
+                <sphereGeometry args={[0.55, 32, 24]} />
+                <meshPhysicalMaterial color="#fdfcf0" roughness={0.2} transmission={0.05} ior={1.45} />
             </mesh>
-            <group position={[0, -1.75, 0]}>
-                <mesh castShadow>
-                    <sphereGeometry args={[0.55, 32, 32]} />
-                    <meshStandardMaterial color="#f1f5f9" roughness={0.3} />
+
+            {/* Distal Epiphysis (Joint base) */}
+            <group position={[0, -1.6, 0]} rotation={[0, -0.2, -0.4]}>
+                <mesh scale={[1.3, 0.7, 1.1]} castShadow>
+                    <sphereGeometry args={[0.55, 32, 24]} />
+                    <meshPhysicalMaterial color="#fdfcf0" roughness={0.2} transmission={0.05} ior={1.45} />
                 </mesh>
             </group>
 
@@ -95,17 +119,17 @@ function StylizedBone({ hotspots = [], activeHotspotId }: { hotspots?: HotspotDa
                 />
             ))}
 
-            {hotspots.length === 0 && (
+            {(hasIssue || hotspots.length === 0) && (
                 <>
-                    <InjuryHotspot position={[0, 0.8, 0.4]} label="FRACTURE: PROXIMAL" />
-                    <InjuryHotspot position={[0, -0.5, -0.4]} label="DENSITY ANOMALY" />
+                    <InjuryHotspot position={[0, 0.5, 0.35]} label="ANATOMICAL NODE: PROXIMAL SHAFT" isActive={hasIssue} />
+                    <InjuryHotspot position={[0, -0.8, -0.35]} label="ANATOMICAL NODE: DISTAL METAPHYSIS" isActive={hasIssue} />
                 </>
             )}
         </group>
     );
 }
 
-export default function BoneScene({ hotspots = [], activeHotspotId = null }: { hotspots?: HotspotData[], activeHotspotId?: string | null }) {
+export default function BoneScene({ hotspots = [], activeHotspotId = null, hasIssue = false }: { hotspots?: HotspotData[], activeHotspotId?: string | null, hasIssue?: boolean }) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -137,7 +161,7 @@ export default function BoneScene({ hotspots = [], activeHotspotId = null }: { h
                 <pointLight position={[0, 5, 5]} color="#00D1FF" intensity={1} />
 
                 <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-                    <StylizedBone hotspots={hotspots} activeHotspotId={activeHotspotId} />
+                    <StylizedBone hotspots={hotspots} activeHotspotId={activeHotspotId} hasIssue={hasIssue} />
                 </Float>
 
                 <ContactShadows

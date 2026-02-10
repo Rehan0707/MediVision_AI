@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 type Language = "en" | "hi" | "mr" | "ta";
 type UserRole = "doctor" | "patient" | "admin";
@@ -171,6 +172,20 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
         setIsInitialized(true);
     }, []);
+
+    // Sync role from session if available
+    const { data: session } = useSession();
+
+    useEffect(() => {
+        if (session?.user) {
+            // @ts-ignore
+            const sessionRole = (session.user.role || session.user.userRole || "patient").toLowerCase();
+            console.log("SettingsContext: Syncing role from session:", sessionRole);
+            if (sessionRole !== userRole && (sessionRole === 'doctor' || sessionRole === 'admin' || sessionRole === 'patient')) {
+                setUserRole(sessionRole as UserRole);
+            }
+        }
+    }, [session, userRole]);
 
     // Save settings to localStorage
     useEffect(() => {

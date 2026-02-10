@@ -16,18 +16,27 @@ interface ComparisonModalProps {
     originalImage: string;
     detectedPart?: string;
     hasIssue?: boolean;
+    modality?: string | null;
 }
 
-export function ComparisonModal({ isOpen, onClose, originalImage, detectedPart = 'searching', hasIssue = false }: ComparisonModalProps) {
+export function ComparisonModal({ isOpen, onClose, originalImage, detectedPart = 'searching', hasIssue = false, modality }: ComparisonModalProps) {
     const [sliderPos, setSliderPos] = useState(50);
 
     const renderScene = () => {
-        if (detectedPart.includes('brain') || detectedPart.includes('mri')) return <BrainScene hasIssue={hasIssue} />;
-        if (detectedPart.includes('hand') || detectedPart.includes('carpal')) return <HandScene hasIssue={hasIssue} />;
-        if (detectedPart.includes('knee') || detectedPart.includes('leg') || detectedPart.includes('joint')) return <KneeScene hasIssue={hasIssue} />;
-        if (detectedPart.includes('spine') || detectedPart.includes('back') || detectedPart.includes('vertebra')) return <SpineScene hasIssue={hasIssue} />;
-        if (detectedPart.includes('chest') || detectedPart.includes('lung') || detectedPart.includes('thorax') || detectedPart.includes('bone')) return <ThoraxScene hasIssue={hasIssue} />;
-        return <HandScene hasIssue={hasIssue} />; // Fallback
+        const part = detectedPart.toLowerCase();
+        // Strict matches first
+        if (part.includes('brain') || part.includes('mri')) return <BrainScene hasIssue={hasIssue} />;
+        if (part.includes('hand') || part.includes('carpal')) return <HandScene hasIssue={hasIssue} />;
+        if (part.includes('knee') || part.includes('leg') || part.includes('joint')) return <KneeScene hasIssue={hasIssue} />;
+        if (part.includes('spine') || part.includes('back') || part.includes('vertebra')) return <SpineScene hasIssue={hasIssue} />;
+        if (part.includes('chest') || part.includes('lung') || part.includes('thorax') || part.includes('bone')) return <ThoraxScene hasIssue={hasIssue} />;
+
+        // Fallback using Modality if detectedPart is "searching" or "unknown"
+        if (modality === 'mri' || modality === 'ct') return <BrainScene hasIssue={hasIssue} />;
+        if (modality === 'xray') return <ThoraxScene hasIssue={hasIssue} />;
+        if (modality === 'leg' || modality === 'knee') return <KneeScene hasIssue={hasIssue} />;
+
+        return <HandScene hasIssue={hasIssue} />; // Final Fallback
     };
 
     return (

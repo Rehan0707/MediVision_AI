@@ -10,40 +10,50 @@ function useBrainTexture() {
     return useMemo(() => {
         if (typeof window === "undefined") return null;
         const canvas = document.createElement("canvas");
-        canvas.width = 1024;
-        canvas.height = 1024;
+        canvas.width = 2048; // Higher res for perfection
+        canvas.height = 2048;
         const ctx = canvas.getContext("2d")!;
 
-        // Fill base with mid-gray (neutral displacement)
-        ctx.fillStyle = "#777777";
-        ctx.fillRect(0, 0, 1024, 1024);
+        // Fill base with mid-gray
+        ctx.fillStyle = "#888888";
+        ctx.fillRect(0, 0, 2048, 2048);
 
-        // Draw sulci (dark deep folds)
-        ctx.strokeStyle = "#111111"; // Deep dark for valleys
+        // Draw deep sulci
+        ctx.strokeStyle = "#222222";
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
-        for (let i = 0; i < 1500; i++) {
-            ctx.lineWidth = 15 + Math.random() * 20;
+        for (let i = 0; i < 2000; i++) {
+            ctx.lineWidth = 10 + Math.random() * 25;
             ctx.beginPath();
-            let x = Math.random() * 1024;
-            let y = Math.random() * 1024;
+            let x = Math.random() * 2048;
+            let y = Math.random() * 2048;
             ctx.moveTo(x, y);
 
-            // Draw squiggly "worm" paths
-            const segments = 5 + Math.floor(Math.random() * 10);
+            const segments = 8 + Math.floor(Math.random() * 15);
             for (let j = 0; j < segments; j++) {
-                x += (Math.random() - 0.5) * 100;
-                y += (Math.random() - 0.5) * 100;
+                x += (Math.random() - 0.5) * 150;
+                y += (Math.random() - 0.5) * 150;
                 ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
 
-        // Blur a bit for organic softness
-        ctx.filter = "blur(8px)";
+        // Add highlights for gyri tops
+        ctx.strokeStyle = "#ffffff";
+        ctx.globalAlpha = 0.3;
+        for (let i = 0; i < 800; i++) {
+            ctx.lineWidth = 5 + Math.random() * 15;
+            ctx.beginPath();
+            let x = Math.random() * 2048;
+            let y = Math.random() * 2048;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 20, y + 20);
+            ctx.stroke();
+        }
+
+        ctx.filter = "blur(12px)";
         ctx.drawImage(canvas, 0, 0);
-        ctx.filter = "none";
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -58,52 +68,99 @@ function BrainHemisphere({ side = 1, texture }: { side: number, texture: THREE.T
 
     useFrame((state) => {
         if (meshRef.current) {
-            // Very subtle organic breathing
             const s = 1 + Math.sin(state.clock.elapsedTime * 0.8) * 0.01;
-            meshRef.current.scale.set(0.6 * s, 0.7 * s, 1.1 * s);
+            meshRef.current.scale.set(0.62 * s, 0.75 * s, 1.15 * s);
         }
     });
 
     return (
-        <group position={[side * 0.48, 0.2, 0]}>
-            <Sphere ref={meshRef} args={[1, 128, 128]} scale={[0.6, 0.7, 1.1]}>
-                <meshStandardMaterial
-                    color="#e2b4bd"
-                    roughness={0.5}
-                    metalness={0.0}
+        <group position={[side * 0.52, 0.2, 0]}>
+            <Sphere ref={meshRef} args={[1, 128, 128]} scale={[0.62, 0.75, 1.15]}>
+                <meshPhysicalMaterial
+                    color="#f8d7da"
+                    roughness={0.4}
+                    metalness={0.15}
+                    clearcoat={0.3}
+                    clearcoatRoughness={0.2}
+                    transmission={0.1}
+                    thickness={0.5}
+                    ior={1.45}
                     bumpMap={texture}
-                    bumpScale={0.25}
+                    bumpScale={0.3}
                     displacementMap={texture}
-                    displacementScale={0.12}
-                    emissive="#d4a373"
-                    emissiveIntensity={0.05}
+                    displacementScale={0.15}
+                    reflectivity={0.5}
                 />
             </Sphere>
 
             {/* Parietal/Occipital detail */}
-            <Sphere args={[0.6, 64, 64]} position={[0, -0.3, -0.2]} scale={[0.8, 1.0, 1.2]}>
-                <meshStandardMaterial color="#e2b4bd" bumpMap={texture} bumpScale={0.2} />
+            <Sphere args={[0.65, 64, 64]} position={[side * -0.05, -0.35, -0.25]} scale={[0.85, 1.1, 1.3]}>
+                <meshPhysicalMaterial color="#f8d7da" roughness={0.4} bumpMap={texture} bumpScale={0.25} transmission={0.05} />
             </Sphere>
+        </group>
+    );
+}
 
-            {/* Temporal lobe detail */}
-            <Sphere args={[0.5, 64, 64]} position={[0.2 * side, 0.1, -0.5]} scale={[0.7, 0.8, 0.9]}>
-                <meshStandardMaterial color="#e2b4bd" bumpMap={texture} bumpScale={0.15} />
-            </Sphere>
+function NeuralTracts() {
+    const tractsRef = useRef<THREE.Group>(null);
+    const tracts = useMemo(() => {
+        const t = [];
+        for (let i = 0; i < 40; i++) {
+            const points = [];
+            const startX = (Math.random() - 0.5) * 0.5;
+            const startY = (Math.random() - 0.5) * 0.5;
+            const startZ = (Math.random() - 0.5) * 0.5;
+
+            for (let j = 0; j < 10; j++) {
+                points.push(new THREE.Vector3(
+                    startX + Math.sin(j * 0.5 + i) * 0.8,
+                    startY + (j - 5) * 0.3,
+                    startZ + Math.cos(j * 0.5 + i) * 0.8
+                ));
+            }
+            t.push(new THREE.CatmullRomCurve3(points));
+        }
+        return t;
+    }, []);
+
+    useFrame((state) => {
+        if (tractsRef.current) {
+            tractsRef.current.children.forEach((tract, i) => {
+                const material = (tract as THREE.Mesh).material as THREE.MeshStandardMaterial;
+                material.emissiveIntensity = 0.5 + Math.sin(state.clock.elapsedTime * 2 + i) * 0.5;
+            });
+        }
+    });
+
+    return (
+        <group ref={tractsRef}>
+            {tracts.map((curve, i) => (
+                <mesh key={i}>
+                    <tubeGeometry args={[curve, 20, 0.005, 8, false]} />
+                    <meshStandardMaterial
+                        color="#00D1FF"
+                        transparent
+                        opacity={0.3}
+                        emissive="#00D1FF"
+                        emissiveIntensity={1}
+                        blending={THREE.AdditiveBlending}
+                    />
+                </mesh>
+            ))}
         </group>
     );
 }
 
 function NeuralActivity() {
     const pointsRef = useRef<THREE.Points>(null);
-    const count = 1500;
+    const count = 3000; // More points for a "cloud" look
 
     const positions = useMemo(() => {
         const p = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-            // Constraint within brain-ish shape
-            const x = (Math.random() - 0.5) * 1.8;
-            const y = (Math.random() - 0.5) * 1.5;
-            const z = (Math.random() - 0.5) * 2;
+            const x = (Math.random() - 0.5) * 2;
+            const y = (Math.random() - 0.5) * 1.8;
+            const z = (Math.random() - 0.5) * 2.2;
             p[i * 3] = x;
             p[i * 3 + 1] = y;
             p[i * 3 + 2] = z;
@@ -113,23 +170,25 @@ function NeuralActivity() {
 
     useFrame((state) => {
         if (pointsRef.current) {
-            pointsRef.current.rotation.y = state.clock.elapsedTime * 0.05;
-            // Pulsing synapse brightness
-            (pointsRef.current.material as THREE.PointsMaterial).opacity = 0.4 + Math.sin(state.clock.elapsedTime * 3) * 0.2;
+            pointsRef.current.rotation.y = state.clock.elapsedTime * 0.08;
+            (pointsRef.current.material as THREE.PointsMaterial).opacity = 0.3 + Math.sin(state.clock.elapsedTime * 4) * 0.15;
         }
     });
 
     return (
-        <Points ref={pointsRef} positions={positions}>
-            <PointMaterial
-                transparent
-                color="#00D1FF"
-                size={0.015}
-                sizeAttenuation={true}
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-            />
-        </Points>
+        <group>
+            <NeuralTracts />
+            <Points ref={pointsRef} positions={positions}>
+                <PointMaterial
+                    transparent
+                    color="#00D1FF"
+                    size={0.012}
+                    sizeAttenuation={true}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                />
+            </Points>
+        </group>
     );
 }
 

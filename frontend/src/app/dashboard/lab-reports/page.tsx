@@ -2,14 +2,75 @@
 
 import { motion } from "framer-motion";
 import { FlaskConical, Filter, Search, Download, FileText, AlertCircle, CheckCircle2, ChevronRight, Microscope } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function LabReportsPage() {
-    const reports = [
-        { id: "LAB-9821", date: "July 12, 2024", type: "Comprehensive Blood Panel", status: "Analyzed", findings: "3 High Indicators" },
-        { id: "LAB-9540", date: "May 28, 2024", type: "Metabolic Profile", status: "Optimal", findings: "Normal range" },
-        { id: "LAB-9112", date: "Feb 15, 2024", type: "Vitamin & Mineral Sync", status: "Critical", findings: "Low Vit-D3" }
-    ];
+    const [reports, setReports] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [newReport, setNewReport] = useState({ type: '', text: '' });
+
+    async function fetchReports() {
+        try {
+            const res = await fetch('/api/reports');
+            const data = await res.json();
+            setReports(data.map((r: any) => ({
+                id: `LAB-${r._id.slice(-4).toUpperCase()}`,
+                date: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+                type: r.scanType,
+                status: r.status,
+                findings: r.analysis?.summary ? "Analysis Available" : "Processing...",
+                fullAnalysis: r.analysis?.summary
+            })));
+        } catch (err) {
+            console.error("Failed to fetch reports:", err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchReports();
+    }, []);
+
+    const handleAddReport = async () => {
+        if (!newReport.type || !newReport.text) return;
+        setUploading(true);
+        try {
+            // 1. Create Report
+            const createRes = await fetch('/api/reports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    scanType: newReport.type,
+                    bodyPart: 'Systemic',
+                    scanUrl: 'manual_entry',
+                    patient: 'Self', // Demo user
+                    status: 'Pending'
+                })
+            });
+            const reportData = await createRes.json();
+
+            // 2. Analyze Report
+            await fetch('/api/reports/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: newReport.text,
+                    reportId: reportData._id
+                })
+            });
+
+            setIsUploadOpen(false);
+            setNewReport({ type: '', text: '' });
+            fetchReports(); // Refresh
+        } catch (err) {
+            console.error("Failed to add report:", err);
+        } finally {
+            setUploading(false);
+        }
+    };
 
     return (
         <div className="space-y-10 pb-12">
@@ -18,10 +79,53 @@ export default function LabReportsPage() {
                     <h1 className="text-4xl font-black mb-2 tracking-tight">Lab <span className="text-[#00D1FF]">Insights</span></h1>
                     <p className="text-slate-400">Biological data machine-reading with automated jargon removal.</p>
                 </div>
-                <button className="px-8 py-4 rounded-2xl bg-[#00D1FF] text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#00D1FF]/30 hover:scale-105 active:scale-95 transition-all">
+                <button
+                    onClick={() => setIsUploadOpen(true)}
+                    className="px-8 py-4 rounded-2xl bg-[#00D1FF] text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#00D1FF]/30 hover:scale-105 active:scale-95 transition-all">
                     UPLOAD NEW REPORT
                 </button>
             </div>
+
+            {/* Upload Modal */}
+            {isUploadOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-[#0f1115] w-full max-w-lg rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative"
+                    >
+                        <button onClick={() => setIsUploadOpen(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white">✕</button>
+                        <h2 className="text-2xl font-black mb-6">Add Lab Report</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">Report Type</label>
+                                <input
+                                    value={newReport.type}
+                                    onChange={(e) => setNewReport({ ...newReport, type: e.target.value })}
+                                    placeholder="e.g. Complete Blood Count"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:border-[#00D1FF]"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500 block mb-2">Paste Report Data</label>
+                                <textarea
+                                    value={newReport.text}
+                                    onChange={(e) => setNewReport({ ...newReport, text: e.target.value })}
+                                    placeholder="Paste the raw text from your lab report here for AI analysis..."
+                                    className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:border-[#00D1FF]"
+                                />
+                            </div>
+                            <button
+                                onClick={handleAddReport}
+                                disabled={uploading}
+                                className="w-full py-4 rounded-xl bg-[#00D1FF] text-black font-black uppercase tracking-widest hover:brightness-110 disabled:opacity-50"
+                            >
+                                {uploading ? 'Analyzing...' : 'Analyze & Save'}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Reports List */}
@@ -41,6 +145,8 @@ export default function LabReportsPage() {
                     </div>
 
                     <div className="space-y-4">
+                        {loading && <p className="text-center text-slate-500 py-10">Loading Lab Records...</p>}
+                        {!loading && reports.length === 0 && <p className="text-center text-slate-500 py-10">No lab reports found. Upload a new report to get started.</p>}
                         {reports.map((r, i) => (
                             <motion.div
                                 key={r.id}

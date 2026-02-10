@@ -9,15 +9,37 @@ function AnatomicalBone({ length, width, position, rotation, scale = 1 }: { leng
     return (
         <group position={position} rotation={rotation} scale={scale}>
             <mesh castShadow>
-                <cylinderGeometry args={[width, width * 0.8, length, 12]} />
-                <meshStandardMaterial color="#fffcf5" roughness={0.4} />
+                <capsuleGeometry args={[width, length - width * 2, 8, 16]} />
+                <meshPhysicalMaterial
+                    color="#fdfcf0"
+                    roughness={0.2}
+                    metalness={0.05}
+                    clearcoat={0.5}
+                    transmission={0.1}
+                    thickness={0.5}
+                    ior={1.5}
+                />
             </mesh>
-            {/* Pronounced Joints (Epiphyses) */}
-            <Sphere position={[0, length / 2, 0]} args={[width * 1.4, 16, 16]} scale={[1, 0.7, 1]} castShadow>
-                <meshStandardMaterial color="#fffcf5" roughness={0.4} />
+            {/* Pronounced Joints (High-detail Epiphyses) */}
+            <Sphere position={[0, length / 2, 0]} args={[width * 1.45, 16, 16]} scale={[1, 0.75, 1]} castShadow>
+                <meshPhysicalMaterial
+                    color="#fdfcf0"
+                    roughness={0.1}
+                    transmission={0.2}
+                    thickness={0.2}
+                    emissive="#00D1FF"
+                    emissiveIntensity={0.05}
+                />
             </Sphere>
-            <Sphere position={[0, -length / 2, 0]} args={[width * 1.4, 16, 16]} scale={[1, 0.7, 1]} castShadow>
-                <meshStandardMaterial color="#fffcf5" roughness={0.4} />
+            <Sphere position={[0, -length / 2, 0]} args={[width * 1.45, 16, 16]} scale={[1, 0.75, 1]} castShadow>
+                <meshPhysicalMaterial
+                    color="#fdfcf0"
+                    roughness={0.1}
+                    transmission={0.2}
+                    thickness={0.2}
+                    emissive="#00D1FF"
+                    emissiveIntensity={0.05}
+                />
             </Sphere>
         </group>
     );

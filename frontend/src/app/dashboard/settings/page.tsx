@@ -1,11 +1,103 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Settings, Shield, WifiOff, Bell, User, CheckCircle2, ChevronRight, Moon, Lock } from "lucide-react";
+import { Settings, Shield, WifiOff, Bell, User, CheckCircle2, ChevronRight, Moon, Lock, Save, Loader2, Camera, Phone, Calendar, Ruler, Weight, Droplets, Briefcase, Building, Clock, GraduationCap } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 export default function SettingsPage() {
     const { isRuralMode, isPrivacyMode, setIsRuralMode, setIsPrivacyMode, userRole } = useSettings();
+    const { data: session } = useSession();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+    const [successMessage, setSuccessMessage] = useState("");
+
+    // Form states
+    const [formData, setFormData] = useState<any>({
+        name: "",
+        email: "",
+        phoneNumber: "",
+        avatar: "",
+        // Patient fields
+        dateOfBirth: "",
+        gender: "",
+        bloodGroup: "",
+        weight: "",
+        height: "",
+        // Doctor fields
+        specialization: "",
+        clinicName: "",
+        workingHours: "",
+        experience: "",
+        education: ""
+    });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!session?.user) return;
+            setIsLoading(true);
+            try {
+                const res = await fetch('http://localhost:5001/api/users/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${(session as any).accessToken}`
+                    }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setProfile(data);
+                    const profileData = data.role === 'Patient' ? data.patientProfile : data.role === 'Doctor' ? data.doctorProfile : {};
+                    setFormData({
+                        name: data.name || "",
+                        email: data.email || "",
+                        phoneNumber: data.phoneNumber || "",
+                        avatar: data.avatar || "",
+                        ...profileData,
+                        dateOfBirth: profileData?.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : ""
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch profile:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [session]);
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        setSuccessMessage("");
+        try {
+            const res = await fetch('http://localhost:5001/api/users/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(session as any).accessToken}`
+                },
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) {
+                setSuccessMessage("Identity sync complete. Profile updated.");
+                setTimeout(() => setSuccessMessage(""), 3000);
+            }
+        } catch (err) {
+            console.error("Update failed:", err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <Loader2 className="text-[#00D1FF] animate-spin" size={40} />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10 pb-12">
@@ -16,19 +108,36 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Profile & Identity */}
-                <div className="lg:col-span-2 space-y-8">
+                <form onSubmit={handleUpdateProfile} className="lg:col-span-2 space-y-8">
                     <div className="p-10 rounded-[3rem] glass-morphism border-white/5 bg-white/[0.01]">
-                        <h3 className="text-xl font-black mb-10 flex items-center gap-3 uppercase italic">
-                            <User className="text-[#00D1FF]" size={22} />
-                            Identity Profile
-                        </h3>
+                        <div className="flex justify-between items-center mb-10">
+                            <h3 className="text-xl font-black flex items-center gap-3 uppercase italic">
+                                <User className="text-[#00D1FF]" size={22} />
+                                Identity Profile
+                            </h3>
+                            {successMessage && (
+                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">
+                                    {successMessage}
+                                </motion.span>
+                            )}
+                        </div>
+
                         <div className="flex flex-col md:flex-row items-center gap-10 mb-10 pb-10 border-b border-white/5">
-                            <div className="w-32 h-32 rounded-full bg-slate-800 border-4 border-[#00D1FF] flex items-center justify-center text-4xl font-black">
-                                {userRole === 'doctor' ? 'DR' : 'JD'}
+                            <div className="relative group">
+                                <div className="w-32 h-32 rounded-full bg-slate-800 border-4 border-[#00D1FF] flex items-center justify-center text-4xl font-black overflow-hidden">
+                                    {formData.avatar ? (
+                                        <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        userRole === 'doctor' ? 'DR' : 'JD'
+                                    )}
+                                </div>
+                                <button type="button" className="absolute bottom-0 right-0 p-2 rounded-full bg-[#00D1FF] text-black hover:scale-110 transition-all shadow-lg">
+                                    <Camera size={16} />
+                                </button>
                             </div>
                             <div className="space-y-2 text-center md:text-left">
-                                <h4 className="text-2xl font-black">{userRole === 'doctor' ? 'Dr. Clinical User' : 'John Doe'}</h4>
-                                <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">{userRole} Identity ID: #MV-9921-X</p>
+                                <h4 className="text-2xl font-black">{formData.name || 'User Identity'}</h4>
+                                <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">{userRole} Identity ID: #MV-{profile?._id?.slice(-4) || 'XXXX'}</p>
                                 <div className="flex gap-3 justify-center md:justify-start">
                                     <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">Verified</span>
                                     <span className="px-3 py-1 rounded-full bg-[#7000FF]/10 text-[#7000FF] text-[10px] font-black uppercase tracking-widest border border-[#7000FF]/20 text-blue-glow">Pro Member</span>
@@ -37,18 +146,52 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Email Address</label>
-                                <input type="text" value="user@medivision.ai" readOnly className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-slate-300 font-medium" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Language Protocol</label>
-                                <select className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-slate-300 font-medium outline-none focus:border-[#00D1FF]/50">
-                                    <option>English (Global)</option>
-                                    <option>Hindi (Localized)</option>
-                                    <option>Spanish (ES)</option>
-                                </select>
-                            </div>
+                            <FormField label="Full Name" icon={<User size={14} />} value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} />
+                            <FormField label="Email Address" icon={<Settings size={14} />} value={formData.email} onChange={(v) => setFormData({ ...formData, email: v })} />
+                            <FormField label="Phone Number" icon={<Phone size={14} />} value={formData.phoneNumber} onChange={(v) => setFormData({ ...formData, phoneNumber: v })} />
+
+                            {userRole === 'patient' && (
+                                <>
+                                    <FormField label="Date of Birth" icon={<Calendar size={14} />} value={formData.dateOfBirth} type="date" onChange={(v) => setFormData({ ...formData, dateOfBirth: v })} />
+                                    <FormField label="Weight (kg)" icon={<Weight size={14} />} value={formData.weight} type="number" onChange={(v) => setFormData({ ...formData, weight: v })} />
+                                    <FormField label="Height (cm)" icon={<Ruler size={14} />} value={formData.height} type="number" onChange={(v) => setFormData({ ...formData, height: v })} />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                                            <Droplets size={14} /> Blood Group
+                                        </label>
+                                        <select
+                                            value={formData.bloodGroup}
+                                            onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-slate-300 font-medium outline-none focus:border-[#00D1FF]/50 transition-all"
+                                        >
+                                            <option value="">Select</option>
+                                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => <option key={g} value={g}>{g}</option>)}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+
+                            {userRole === 'doctor' && (
+                                <>
+                                    <FormField label="Specialization" icon={<Briefcase size={14} />} value={formData.specialization} onChange={(v) => setFormData({ ...formData, specialization: v })} />
+                                    <FormField label="Clinic/Hospital" icon={<Building size={14} />} value={formData.clinicName} onChange={(v) => setFormData({ ...formData, clinicName: v })} />
+                                    <FormField label="Working Hours" icon={<Clock size={14} />} value={formData.workingHours} onChange={(v) => setFormData({ ...formData, workingHours: v })} />
+                                    <FormField label="Experience (Years)" icon={<Calendar size={14} />} value={formData.experience} type="number" onChange={(v) => setFormData({ ...formData, experience: v })} />
+                                    <FormField label="Education" icon={<GraduationCap size={14} />} value={formData.education} className="md:col-span-2" onChange={(v) => setFormData({ ...formData, education: v })} />
+                                </>
+                            )}
+                        </div>
+
+                        <div className="mt-12 flex justify-end">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                disabled={isSaving}
+                                className="px-10 py-4 rounded-2xl bg-gradient-to-r from-[#00D1FF] to-[#7000FF] text-black font-black text-xs uppercase tracking-widest flex items-center gap-3 shadow-lg shadow-[#00D1FF]/20"
+                            >
+                                {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                                SYNC IDENTITY DATA
+                            </motion.button>
                         </div>
                     </div>
 
@@ -81,7 +224,7 @@ export default function SettingsPage() {
                             />
                         </div>
                     </div>
-                </div>
+                </form>
 
                 {/* Account Security */}
                 <div className="space-y-8">
@@ -107,12 +250,28 @@ export default function SettingsPage() {
                         <Moon size={32} className="text-[#00D1FF] mb-6 shadow-glow" />
                         <h4 className="font-black text-lg mb-2 uppercase italic">Diagnostic Mode</h4>
                         <p className="text-slate-400 text-sm leading-relaxed mb-6 font-medium">Platform default is set to Clinical Dark. Light mode is available upon regional health board request.</p>
-                        <button className="w-full py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest">
+                        <button type="button" className="w-full py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest">
                             ENABLE LIGHT MODE
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function FormField({ label, icon, value, onChange, type = "text", className = "" }: { label: string, icon: React.ReactNode, value: string, onChange: (v: string) => void, type?: string, className?: string }) {
+    return (
+        <div className={`space-y-2 ${className}`}>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
+                {icon} {label}
+            </label>
+            <input
+                type={type}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-slate-300 font-medium outline-none focus:border-[#00D1FF]/50 transition-all"
+            />
         </div>
     );
 }
@@ -128,6 +287,7 @@ function ToggleSetting({ icon, title, description, active, onToggle }: { icon: R
                 </div>
             </div>
             <button
+                type="button"
                 onClick={onToggle}
                 className={`w-14 h-8 rounded-full p-1 transition-all ${active ? 'bg-[#00D1FF]' : 'bg-slate-800'}`}
             >

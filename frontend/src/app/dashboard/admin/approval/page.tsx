@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Shield, Users, Clock, Mail, Microscope, Globe, Activity, ChevronRight, AlertCircle, Sparkles } from "lucide-react";
+import { Check, X, Shield, Users, Clock, Mail, Microscope, Globe, Activity, ChevronRight, AlertCircle, Sparkles, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -12,11 +12,14 @@ interface Doctor {
     name: string;
     email: string;
     role: string;
-    specialization: string;
-    licenseNumber: string;
-    clinicName: string;
-    workingHours: string;
     status: string;
+    doctorProfile?: {
+        specialization: string;
+        licenseNumber: string;
+        clinicName: string;
+        workingHours: string;
+        verificationProof?: string;
+    };
 }
 
 export default function AdminApprovalPage() {
@@ -127,10 +130,21 @@ export default function AdminApprovalPage() {
                                 </p>
 
                                 <div className="space-y-4 mb-8">
-                                    <DetailItem icon={<Microscope size={14} />} label="Specialty" value={dr.specialization} />
-                                    <DetailItem icon={<Shield size={14} />} label="License" value={dr.licenseNumber} />
-                                    <DetailItem icon={<Globe size={14} />} label="Affiliation" value={dr.clinicName} />
-                                    <DetailItem icon={<Clock size={14} />} label="Hours" value={dr.workingHours} />
+                                    <DetailItem icon={<Microscope size={14} />} label="Specialty" value={dr.doctorProfile?.specialization || 'N/A'} />
+                                    <DetailItem icon={<ShieldCheck size={14} />} label="License" value={dr.doctorProfile?.licenseNumber || 'N/A'} />
+                                    <DetailItem icon={<Globe size={14} />} label="Affiliation" value={dr.doctorProfile?.clinicName || 'N/A'} />
+                                    {dr.doctorProfile?.verificationProof && (
+                                        <div className="pt-2 border-t border-white/5">
+                                            <a
+                                                href={dr.doctorProfile.verificationProof}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[#00D1FF] text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:underline"
+                                            >
+                                                <Sparkles size={12} /> View Verification Proof
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="mt-auto grid grid-cols-2 gap-4">
