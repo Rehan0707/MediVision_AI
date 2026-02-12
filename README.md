@@ -11,10 +11,13 @@
 
 ## 🚀 Features
 
-- **AI X-Ray → 3D Bone Reconstruction**: Converts 2D scans into interactive 3D models.
-- **Medical Machine Reading**: Explains ECG, BP monitors, and Lab reports.
-- **AI Rehab Simulator**: Recovery guide and exercise demonstrations.
-- **Doctor Co-Pilot**: AI assistance for differential diagnosis.
+- **Imaging & Radiology**: X-Ray, MRI, CT, Ultrasound, PET, Mammography – AI analysis with 3D visualization
+- **Laboratory**: Blood tests, Urine, LFT, KFT, Thyroid, Hormone – report analysis with plain-English explanations
+- **Cardiac**: ECG/EKG, Echocardiogram, Stress Test, Holter – rhythm and report analysis
+- **Pulmonary**: PFT, Spirometry, Sleep Study – respiratory report analysis
+- **Clinical Documents**: Discharge summaries, Operation notes, Prescriptions – AI extraction and summarization
+- **Advanced**: Oncology, Histopathology, Genetic Testing, Allergy – specialist report analysis
+- **Location Health News**: Real-time health headlines based on user location
 
 ## 🛠 Tech Stack
 
@@ -77,6 +80,11 @@ Or run them individually:
 - Set `FRONTEND_URL` in backend to your deployed frontend URL.
 - Use MongoDB Atlas or managed MongoDB for production.
 - Keep API keys in env vars only, never in code.
+- Add `NEWS_API_KEY` (from newsapi.org) for location-based health news.
+- Add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` for Google sign-in.
+
+### AI Prompts & Clinical Patterns
+Modality-specific AI prompts are designed around standard clinical report structures (aligned with patterns from medical datasets). For custom dataset integration (e.g. Kaggle ECG, chest X-ray datasets), extend the prompts in `frontend/src/app/dashboard/page.tsx` and `backend/src/services/aiService.ts`.
 
 ## 🛡 License
 MIT License

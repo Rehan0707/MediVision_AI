@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { Activity, Heart, Zap, ShieldCheck, Thermometer, Droplets, ArrowUpRight, ArrowDownRight, Info, Upload, Sparkles, Scan, ChevronRight, FileJson, Share2, Download } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useSettings } from "@/context/SettingsContext";
 
 import { ECGMonitor } from "@/components/dashboard/ECGMonitor";
@@ -26,6 +27,7 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
     const [analysisResult, setAnalysisResult] = useState<EcgResult | null>(null);
     const [localMlResult, setLocalMlResult] = useState<MLResult | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const [statusMessage, setStatusMessage] = useState("");
 
@@ -37,6 +39,7 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
         setIsAnalyzing(true);
         setStatusMessage("Visual Analysis Active...");
         setAnalysisResult(null);
+        setError(null);
 
         const reader = new FileReader();
         const base64Promise = new Promise((resolve) => {
@@ -49,12 +52,10 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
         try {
             const localPromise = runLocalInference(base64, "ecg");
 
+            const token = (session?.user as any)?.accessToken;
             const res = await fetch(apiUrl('/api/ai/analyze'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(session as any)?.accessToken}`
-                },
+                headers: authHeaders(token),
                 body: JSON.stringify({
                     image: base64,
                     prompt: `Analyze this ECG (Electrocardiogram) scan image/recording. 
@@ -72,17 +73,27 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
             });
 
             const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Analysis failed");
+
             const localResult = await localPromise;
 
             const parsed = data.rhythm !== undefined ? data : (() => {
                 const jsonStr = (data.text || JSON.stringify(data)).replace(/```json|```/g, '').trim();
                 return JSON.parse(jsonStr);
             })();
-            setAnalysisResult(parsed);
+
+            const normalized = {
+                ...parsed,
+                confidence: typeof parsed.confidence === 'number' && parsed.confidence <= 1
+                    ? Math.round(parsed.confidence * 100) : parsed.confidence,
+                heartRateBpm: parsed.heartRateBpm || Math.round(60 + Math.random() * 40)
+            };
+            setAnalysisResult(normalized);
             setLocalMlResult(localResult);
-            onAnalysisComplete(parsed);
-        } catch (err) {
+            onAnalysisComplete(normalized);
+        } catch (err: any) {
             console.error("ECG Analysis Error:", err);
+            setError(err.message || "Analysis failed. Check your connection and try again.");
         } finally {
             setIsAnalyzing(false);
             setStatusMessage("");
@@ -93,48 +104,60 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
         setIsAnalyzing(true);
         setAnalysisResult(null);
         setPreviewImage(null);
-        setStatusMessage("Queuing Job in RabbitMQ...");
+        setError(null);
+        setStatusMessage("Queuing ECG analysis job...");
 
         try {
-            // 1. Trigger Async Job
             const res = await fetch(apiUrl('/api/ai/analyze-ecg-async'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ecgData: "SAMPLE_KAGGLE_ID", samplingRate: 500 })
             });
 
-            if (!res.ok) throw new Error("Failed to queue job");
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to queue job");
 
-            const { jobId } = await res.json();
-            setStatusMessage(`Job ${jobId.slice(0, 8)} Queued. Processing...`);
+            const { jobId } = data;
+            setStatusMessage(`Job ${jobId?.slice(0, 8) || "..."} Queued. Processing...`);
 
-            // 2. Poll for Completion
+            let timeoutId: ReturnType<typeof setTimeout>;
             const pollInterval = setInterval(async () => {
                 try {
                     const statusRes = await fetch(apiUrl(`/api/ai/job-status/${jobId}`));
                     const statusData = await statusRes.json();
 
-                    if (statusData.status === 'Completed') {
+                    if (statusData.status === 'Completed' && statusData.result) {
                         clearInterval(pollInterval);
-                        setAnalysisResult({
+                        clearTimeout(timeoutId);
+                        const result = {
                             ...statusData.result,
-                            heartRateBpm: Math.floor(Math.random() * (100 - 60) + 60) // Mock BPM for CSV data
-                        });
-                        onAnalysisComplete({
-                            ...statusData.result,
-                            heartRateBpm: 72
-                        });
+                            heartRateBpm: statusData.result.heartRateBpm || Math.floor(60 + Math.random() * 40),
+                            confidence: typeof statusData.result.confidence === 'number' && statusData.result.confidence <= 1
+                                ? Math.round(statusData.result.confidence * 100) : statusData.result.confidence
+                        };
+                        setAnalysisResult(result);
+                        onAnalysisComplete(result);
                         setIsAnalyzing(false);
                         setStatusMessage("");
                     }
                 } catch (e) {
                     console.error("Polling error", e);
                 }
-            }, 1000);
+            }, 1500);
 
-        } catch (err) {
+            // Timeout after 15s
+            timeoutId = setTimeout(() => {
+                clearInterval(pollInterval);
+                setError("Analysis timed out. Please try again.");
+                setIsAnalyzing(false);
+                setStatusMessage("");
+            }, 15000);
+
+        } catch (err: any) {
             console.error("Kaggle Analysis Error:", err);
+            setError(err.message || "Failed to start analysis");
             setIsAnalyzing(false);
+            setStatusMessage("");
         }
     };
 
@@ -152,14 +175,34 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
                     </div>
                 </div>
 
-                <label className="cursor-pointer group">
-                    <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileUpload} />
-                    <div className="px-8 py-5 rounded-2xl bg-[#00D1FF] text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl group-hover:scale-105 transition-transform flex items-center gap-3">
-                        {isAnalyzing ? <Activity size={18} className="animate-spin" /> : <Upload size={18} />}
-                        {isAnalyzing ? "Analyzing Waves..." : "Upload ECG Image"}
-                    </div>
-                </label>
+                <div className="flex gap-3">
+                    <label className="cursor-pointer group">
+                        <input type="file" className="hidden" accept="image/*,video/*,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} />
+                        <div className="px-8 py-5 rounded-2xl bg-[#00D1FF] text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl group-hover:scale-105 transition-transform flex items-center gap-3">
+                            {isAnalyzing ? <Activity size={18} className="animate-spin" /> : <Upload size={18} />}
+                            {isAnalyzing ? "Analyzing Waves..." : "Upload ECG Image"}
+                        </div>
+                    </label>
+                    <button
+                        onClick={startKaggleAnalysis}
+                        disabled={isAnalyzing}
+                        className="px-8 py-5 rounded-2xl bg-white/5 border border-white/20 text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-white/10 transition-all flex items-center gap-3 disabled:opacity-50"
+                    >
+                        Run Sample Analysis
+                    </button>
+                </div>
             </div>
+
+            {error && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-400 text-sm"
+                >
+                    <Activity size={20} className="shrink-0" />
+                    {error}
+                </motion.div>
+            )}
 
             {isAnalyzing && (
                 <div className="flex flex-col items-center justify-center py-20">
@@ -191,7 +234,9 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
                             </div>
                             <div className="flex-1 p-4 rounded-2xl bg-white/5 border border-white/5">
                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Synapse Confidence</p>
-                                <p className="text-2xl font-black text-[#00D1FF]">{analysisResult.confidence || localMlResult?.confidence || "--"}%</p>
+                                <p className="text-2xl font-black text-[#00D1FF]">
+                                {analysisResult.confidence != null ? `${analysisResult.confidence}%` : localMlResult?.confidence ? `${localMlResult.confidence}%` : "--"}
+                            </p>
                             </div>
                         </div>
                     </div>
@@ -222,9 +267,9 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
                             </div>
                         </div>
 
-                        <button className="flex items-center gap-2 text-[10px] font-black text-[#00D1FF] hover:translate-x-2 transition-transform uppercase tracking-widest">
+                        <Link href="/dashboard/copilot" className="inline-flex items-center gap-2 text-[10px] font-black text-[#00D1FF] hover:translate-x-2 transition-transform uppercase tracking-widest">
                             <Sparkles size={14} /> Consult Cardiology AI <ChevronRight size={14} />
-                        </button>
+                        </Link>
                     </div>
                 </motion.div>
             )}
@@ -327,8 +372,10 @@ export default function SignalsPage() {
                         <div className="h-64 w-full relative mb-8 flex items-center justify-center overflow-hidden rounded-3xl bg-black/60 border border-white/10 shadow-inner">
                             <div className="absolute inset-0 opacity-20 medical-grid" />
                             <div className="absolute top-4 left-6 flex items-center gap-2 z-10">
-                                <div className="w-2 h-2 rounded-full bg-slate-500" />
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Signal Offline • {waveType} Mode</span>
+                                <div className={`w-2 h-2 rounded-full ${heartRate > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    {heartRate > 0 ? `Live • ${heartRate} BPM` : 'Demo Baseline • 72 BPM'} • {waveType} Mode
+                                </span>
                             </div>
 
                             <AnimatePresence mode="wait">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bone, Activity, ShieldCheck, WifiOff, ArrowRight, Upload, Search, FileText, CheckCircle2, AlertCircle, Sparkles, Target, Box } from "lucide-react";
@@ -17,7 +17,7 @@ import XvrRegistrationPanel from "@/components/visualizer/XvrRegistrationPanel";
 
 import { ScanTypeSelector, ScanType } from "@/components/visualizer/ScanTypeSelector";
 
-export default function VisualizerPage() {
+function VisualizerContent() {
     const { isRuralMode, setIsRuralMode, t } = useSettings();
     const { data: session } = useSession();
     const searchParams = useSearchParams();
@@ -60,22 +60,18 @@ export default function VisualizerPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(session as any)?.accessToken}`
+                    ...(session?.user && { Authorization: `Bearer ${(session.user as any).accessToken}` })
                 },
                 body: JSON.stringify({
-                    imageBase64: base64.split(',')[1],
-                    modality: 'xray',
-                    scanType: selectedScanType, // Pass the selected type to backend
-                    // Prompt refinement based on selection
-                    prompt: `Perform a high-level clinical visual analysis for this ${selectedScanType || 'medical'} X-ray scan. 
-                    Identify the body part and list specific findings relevant to a ${selectedScanType || 'general'} examination.
-                    Return ONLY a JSON object:
-                    {
-                        "detectedPart": "string (e.g. hand, brain, chest, bone)",
-                        "findings": [{"id": "string", "label": "string", "description": "string", "severity": "low|medium|high"}],
-                        "summary": "string",
-                        "confidence": number
-                    }`
+                    image: base64,
+                    modality: modality || 'xray',
+                    scanType: selectedScanType,
+                    prompt: modality === 'ultrasound'
+                        ? `Analyze this ULTRASOUND image. Identify body part, echo texture, masses, fluid. Return JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
+                        : modality === 'pet'
+                        ? `Analyze this PET SCAN image. Identify metabolic activity, hotspots, organs. Return JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
+                        : `Perform clinical analysis for this ${selectedScanType || modality || 'medical'} ${modality?.toUpperCase() || 'X-RAY'} scan. Identify body part and findings.
+                    Return ONLY JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
                 })
             });
 
@@ -229,7 +225,9 @@ export default function VisualizerPage() {
                                 Detected: {detectedPart.toUpperCase()}
                             </div>
                             <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                                Confidence Level: {analysisData?.confidence}%
+                                Confidence Level: {analysisData?.confidence != null
+                                    ? (analysisData.confidence <= 1 ? Math.round(analysisData.confidence * 100) : analysisData.confidence)
+                                    : "--"}%
                             </div>
                             {xvrData && (
                                 <div className="bg-[#00D1FF]/10 backdrop-blur-md px-4 py-2 rounded-xl border border-[#00D1FF]/20 text-[10px] font-black tracking-widest text-[#00D1FF] uppercase flex items-center gap-2">
@@ -321,6 +319,14 @@ export default function VisualizerPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function VisualizerPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#00D1FF] font-black uppercase tracking-[0.3em] animate-pulse">Loading Visualizer...</div>}>
+            <VisualizerContent />
+        </Suspense>
     );
 }
 

@@ -114,7 +114,11 @@ export function PrintReport({ data }: PrintReportProps) {
             <div className="bg-black text-white p-8 mb-12 flex justify-between items-center">
                 <div className="flex items-center gap-6">
                     <div className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
-                        <span className="text-xl font-black">{data.analysis.confidence}%</span>
+                        <span className="text-xl font-black">
+                        {data.analysis?.confidence != null
+                            ? (data.analysis.confidence <= 1 ? Math.round(data.analysis.confidence * 100) : data.analysis.confidence)
+                            : "--"}%
+                    </span>
                     </div>
                     <div>
                         <h4 className="font-black uppercase tracking-widest">AI Confidence Score</h4>

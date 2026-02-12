@@ -5,6 +5,20 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 
+// @desc    Chat with AI
+// @route   POST /api/ai/chat
+// @access  Public
+export const chat = async (req: Request, res: Response) => {
+    try {
+        const { message, context } = req.body;
+        if (!message) return res.status(400).json({ message: 'Message required' });
+        const result = await aiService.chatWithAI(message, context);
+        res.json(result);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Analyze medical image
 // @route   POST /api/ai/analyze
 // @access  Public
@@ -79,7 +93,13 @@ export const explainReport = async (req: Request, res: Response) => {
     }
 };
 export const getHealthNews = async (req: Request, res: Response) => {
-    res.json([]);
+    try {
+        const { location } = req.body;
+        const news = await aiService.generateHealthNews(location || 'Global');
+        res.json(news);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 export const synthesizeNote = async (req: Request, res: Response) => {
@@ -101,41 +121,62 @@ export const analyzeECGAsync = async (req: Request, res: Response) => {
         const jobId = uuidv4();
         const channel = getChannel();
 
-        if (channel) {
-            const message = {
-                jobId,
-                timestamp: new Date(),
-                fileType: 'csv',
-                metadata: { samplingRate }
-            };
-            channel.sendToQueue('ecg_analysis_queue', Buffer.from(JSON.stringify(message)), { persistent: true });
-        } else {
-            console.warn("RabbitMQ unavailable. Simulating Async Job...");
-            // Simulate processing delay and write result
-            setTimeout(() => {
-                const jobsDir = path.join(__dirname, '../../data/jobs');
-                if (!fs.existsSync(jobsDir)) fs.mkdirSync(jobsDir, { recursive: true });
 
-                fs.writeFileSync(path.join(jobsDir, `${jobId}.json`), JSON.stringify({
+        // Direct AI Analysis (Bypassing RabbitMQ for immediate result as requested)
+        // Check if we want to use the worker or direct analysis. 
+        // For "100% results" and reliability without starting workers, we defaults to direct.
+
+        try {
+            // If the user wants async/worker flow, we can keep it, but fall back to direct if no channel.
+            // Given the request "nothing works properly", simplification is better.
+
+            let finalEcgData = ecgData;
+            if (ecgData === 'SAMPLE_KAGGLE_ID') {
+                // Inject sample normal sinus rhythm data for demonstration
+                finalEcgData = "0.0,0.05,0.1,0.15,0.2,0.8,-0.2,0.0,0.05,0.1,0.15,0.2,0.8,-0.2,0.0,0.05,0.1,0.15,0.2,0.8,-0.2,0.0,0.05,0.1,0.15,0.2,0.8,-0.2";
+            }
+
+            const result = await aiService.analyzeECG(finalEcgData, samplingRate || 500);
+
+            // Save result to job file to maintain compatibility with polling frontend
+            const jobsDir = path.join(__dirname, '../../data/jobs');
+            if (!fs.existsSync(jobsDir)) fs.mkdirSync(jobsDir, { recursive: true });
+
+            fs.writeFileSync(path.join(jobsDir, `${jobId}.json`), JSON.stringify({
+                jobId,
+                status: 'Completed',
+                result,
+                completedAt: new Date()
+            }));
+
+            res.json({
+                message: 'ECG Analysis Completed',
+                jobId,
+                status: 'Completed',
+                result // Return result immediately too
+            });
+
+        } catch (aiError: any) {
+            console.error("Direct AI Analysis failed, falling back to queue if available or error", aiError);
+            if (channel) {
+                const message = {
                     jobId,
-                    status: 'Completed',
-                    result: {
-                        rhythm: "Normal Sinus Rhythm (Simulated)",
-                        findings: ["RabbitMQ Offline - Using Mock Data", "Kaggle Dataset: Normal"],
-                        summary: "System simulated analysis of Kaggle ECG dataset due to missing broker.",
-                        confidence: 0.99
-                    },
-                    completedAt: new Date()
-                }));
-            }, 3000);
+                    timestamp: new Date(),
+                    fileType: 'csv',
+                    metadata: { samplingRate }
+                };
+                channel.sendToQueue('ecg_analysis_queue', Buffer.from(JSON.stringify(message)), { persistent: true });
+                res.status(202).json({
+                    message: 'ECG Analysis job queued (AI temporarily unavailable)',
+                    jobId,
+                    status: 'Processing',
+                    checkStatusUrl: `/api/ai/job-status/${jobId}`
+                });
+            } else {
+                throw aiError;
+            }
         }
 
-        res.status(202).json({
-            message: 'ECG Analysis job queued',
-            jobId,
-            status: 'Processing',
-            checkStatusUrl: `/api/ai/job-status/${jobId}`
-        });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }

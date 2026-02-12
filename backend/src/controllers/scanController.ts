@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 // @access  Public (Should be private in production)
 export const getScans = async (req: Request, res: Response) => {
     try {
-        const scans = await Scan.find().sort({ timestamp: -1 });
+        const scans = await Scan.find().sort({ createdAt: -1 });
         res.json(scans);
     } catch (error: any) {
         res.status(500).json({ message: error.message });

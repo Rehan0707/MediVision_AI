@@ -9,7 +9,7 @@ interface ECGMonitorProps {
 
 export const ECGMonitor: React.FC<ECGMonitorProps> = ({ heartRate, color = "#00D1FF" }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const requestRef = useRef<number>();
+    const requestRef = useRef<number | undefined>(undefined);
     const posRef = useRef(0);
     const dataRef = useRef<number[]>([]);
 
@@ -17,7 +17,8 @@ export const ECGMonitor: React.FC<ECGMonitorProps> = ({ heartRate, color = "#00D
     const generateECGPoint = (x: number) => {
         // beatInterval in samples. Speed is approx 60fps.
         // heartRate: 60bpm = 1 beat/sec = 60 samples. 120bpm = 2 beats/sec = 30 samples.
-        const samplesPerBeat = (60 * 60) / heartRate;
+        const bpm = heartRate > 0 ? heartRate : 72;
+        const samplesPerBeat = (60 * 60) / bpm;
         const phase = (x % samplesPerBeat) / samplesPerBeat;
 
         // Baseline noise

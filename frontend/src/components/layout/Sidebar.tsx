@@ -33,6 +33,7 @@ export function Sidebar() {
     const allItems = [
         // CORE DIAGNOSTICS
         { group: "CORE", name: t("dashboard"), icon: LayoutDashboard, href: "/dashboard", roles: ["patient", "doctor", "admin"] },
+        { group: "CORE", name: "Patient Portal", icon: Activity, href: "/dashboard/patient-portal", roles: ["patient", "doctor", "admin"] },
         { group: "CORE", name: "X-Ray 3D", icon: Bone, href: "/dashboard?modality=xray", roles: ["patient", "doctor", "admin"] },
         { group: "CORE", name: "MRI 3D", icon: Brain, href: "/dashboard?modality=mri", roles: ["patient", "doctor", "admin"] },
         { group: "CORE", name: "CT Scan 3D", icon: Scan, href: "/dashboard?modality=ct", roles: ["patient", "doctor", "admin"] },

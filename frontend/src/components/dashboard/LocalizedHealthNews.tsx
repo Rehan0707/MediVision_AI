@@ -15,12 +15,13 @@ interface HealthNews {
     summary: string;
 }
 
+import { apiUrl } from "@/lib/api";
+
 export const LocalizedHealthNews = () => {
     const { isRuralMode } = useSettings();
     const [location, setLocation] = useState<string>("Detecting Location...");
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [news, setNews] = useState<HealthNews[]>([]);
-
 
     const detectLocation = () => {
         setIsRefreshing(true);
@@ -64,13 +65,15 @@ export const LocalizedHealthNews = () => {
         );
     };
 
+
     const fetchAiNews = async (locForAi: string) => {
         try {
-            const res = await fetch('/api/ai/news', {
+            const res = await fetch(apiUrl('/api/ai/news'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ location: locForAi })
             });
+
             const data = await res.json();
             if (data.news && Array.isArray(data.news)) {
                 setNews(data.news);

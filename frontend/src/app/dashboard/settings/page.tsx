@@ -124,7 +124,7 @@ export default function SettingsPage() {
                                     {formData.avatar ? (
                                         <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                     ) : (
-                                        formData.name?.split(/\s+/).map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
+                                        formData.name?.split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
                                     )}
                                 </div>
 <label className="absolute bottom-0 right-0 p-2 rounded-full bg-[#00D1FF] text-black hover:scale-110 transition-all shadow-lg cursor-pointer">

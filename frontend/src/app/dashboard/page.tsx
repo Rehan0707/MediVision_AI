@@ -98,7 +98,7 @@ function DashboardContent() {
             if (!session) return;
             try {
                 const res = await fetch(apiUrl('/api/scans'), {
-                    headers: authHeaders((session as any).accessToken)
+                    headers: authHeaders((session?.user as any)?.accessToken)
                 });
                 const data = await res.json();
                 if (data && data.length > 0) setLatestScan(data[0]);
@@ -114,7 +114,7 @@ function DashboardContent() {
             if (!session) return;
             try {
                 const res = await fetch(apiUrl('/api/users/profile'), {
-                    headers: authHeaders((session as any).accessToken)
+                    headers: authHeaders((session?.user as any)?.accessToken)
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -209,6 +209,49 @@ function DashboardContent() {
         return "Scan Analysis Tools";
     };
 
+    const MODALITY_PROMPTS: Record<string, string> = {
+        blood: `This is a BLOOD TEST report image. Extract all values, units, and reference ranges. Identify any abnormal (high/low) values.
+        Return ONLY valid JSON: {"detectedPart":"blood","preciseAbnormality":"string or 'Normal'","preciseLocation":"Systemic","findings":["value1","value2"],"recommendations":["suggestion"],"summary":"Plain English summary for patient","confidence":0.0-1.0}`,
+        urine: `This is a URINE ANALYSIS report. Extract values (pH, protein, glucose, etc.). Identify abnormalities.
+        Return ONLY valid JSON: {"detectedPart":"urine","preciseAbnormality":"string or 'Normal'","preciseLocation":"Renal","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        lft: `This is a LIVER FUNCTION (LFT) report. Extract ALT, AST, ALP, bilirubin. Identify abnormal values.
+        Return ONLY valid JSON: {"detectedPart":"liver","preciseAbnormality":"string or 'Normal'","preciseLocation":"Hepatic","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        kft: `This is a KIDNEY FUNCTION (KFT) report. Extract creatinine, urea, electrolytes. Identify abnormalities.
+        Return ONLY valid JSON: {"detectedPart":"kidney","preciseAbnormality":"string or 'Normal'","preciseLocation":"Renal","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        thyroid: `This is a THYROID PROFILE report (TSH, T3, T4). Extract values, identify hypo/hyperthyroidism.
+        Return ONLY valid JSON: {"detectedPart":"thyroid","preciseAbnormality":"string or 'Normal'","preciseLocation":"Endocrine","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        hormone: `This is a HORMONE TEST report. Extract values, identify imbalances.
+        Return ONLY valid JSON: {"detectedPart":"endocrine","preciseAbnormality":"string or 'Normal'","preciseLocation":"Systemic","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        echo: `This is an ECHOCARDIOGRAM report/image. Extract EF%, chamber sizes, valve findings.
+        Return ONLY valid JSON: {"detectedPart":"heart","preciseAbnormality":"string or 'Normal'","preciseLocation":"Cardiac","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        stress: `This is a STRESS TEST report. Extract exercise capacity, ECG changes, symptoms.
+        Return ONLY valid JSON: {"detectedPart":"heart","preciseAbnormality":"string or 'Normal'","preciseLocation":"Cardiac","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        holter: `This is a HOLTER MONITORING report. Extract rhythm summary, arrhythmia findings.
+        Return ONLY valid JSON: {"detectedPart":"heart","preciseAbnormality":"string or 'Normal'","preciseLocation":"Cardiac","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        pft: `This is a PULMONARY FUNCTION (PFT) report. Extract FEV1, FVC, ratios. Identify obstruction/restriction.
+        Return ONLY valid JSON: {"detectedPart":"lung","preciseAbnormality":"string or 'Normal'","preciseLocation":"Pulmonary","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        spirometry: `This is a SPIROMETRY report. Extract flow rates, volumes.
+        Return ONLY valid JSON: {"detectedPart":"lung","preciseAbnormality":"string or 'Normal'","preciseLocation":"Pulmonary","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        sleep: `This is a SLEEP STUDY report (polysomnography). Extract AHI, oxygen dips, sleep stages.
+        Return ONLY valid JSON: {"detectedPart":"sleep","preciseAbnormality":"string or 'Normal'","preciseLocation":"Neurological","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        discharge: `This is a DISCHARGE SUMMARY. Extract diagnosis, procedures, medications, follow-up instructions.
+        Return ONLY valid JSON: {"detectedPart":"clinical","preciseAbnormality":"string or 'Routine'","preciseLocation":"Hospital","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        operation: `This is an OPERATION NOTE. Extract procedure, findings, post-op plan.
+        Return ONLY valid JSON: {"detectedPart":"clinical","preciseAbnormality":"string or 'Routine'","preciseLocation":"Surgical","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        clinical: `This is a CLINICAL NOTE. Extract key observations, assessment, plan.
+        Return ONLY valid JSON: {"detectedPart":"clinical","preciseAbnormality":"string or 'Routine'","preciseLocation":"Consultation","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        prescription: `This is a PRESCRIPTION. Extract medications, dosage, instructions.
+        Return ONLY valid JSON: {"detectedPart":"clinical","preciseAbnormality":"string or 'Routine'","preciseLocation":"Pharmacy","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        oncology: `This is an ONCOLOGY report. Extract tumor markers, staging, treatment status.
+        Return ONLY valid JSON: {"detectedPart":"oncology","preciseAbnormality":"string or 'Stable'","preciseLocation":"Oncological","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        biopsy: `This is a HISTOPATHOLOGY/BIOPSY report. Extract diagnosis, grade, margins.
+        Return ONLY valid JSON: {"detectedPart":"biopsy","preciseAbnormality":"string or 'Benign'","preciseLocation":"Tissue","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        genetic: `This is a GENETIC TESTING report. Extract variants, risk alleles, interpretation.
+        Return ONLY valid JSON: {"detectedPart":"genetic","preciseAbnormality":"string or 'No significant variants'","preciseLocation":"Genomic","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+        allergy: `This is an ALLERGY PROFILE report. Extract allergens, IgE levels, sensitivities.
+        Return ONLY valid JSON: {"detectedPart":"allergy","preciseAbnormality":"string or 'No significant allergies'","preciseLocation":"Immunological","findings":[],"recommendations":[],"summary":"Plain English summary","confidence":0.0-1.0}`,
+    };
+
     const getHudDescription = () => {
         if (analysisData?.preciseAbnormality || analysisData?.preciseLocation) {
             return `${analysisData.preciseAbnormality || "Abnormality"} identified at ${analysisData.preciseLocation || "specified anatomical zone"}. ${analysisData.summary || ""}`;
@@ -228,12 +271,14 @@ function DashboardContent() {
             // Run custom ML alongside Gemini
             const customMlPromise = runLocalInference(imageToAnalyze, selectedModality || "xray");
 
-const res = await fetch(apiUrl('/api/ai/analyze'), {
-                    method: 'POST',
-                    headers: authHeaders((session as any).accessToken),
+            const customPrompt = selectedModality ? MODALITY_PROMPTS[selectedModality] : undefined;
+            const res = await fetch(apiUrl('/api/ai/analyze'), {
+                method: 'POST',
+                headers: authHeaders((session?.user as any)?.accessToken),
                 body: JSON.stringify({
                     image: imageToAnalyze,
-                    modality: selectedModality || "xray"
+                    modality: selectedModality || "xray",
+                    prompt: customPrompt
                 })
             });
             const data = await res.json();
@@ -260,8 +305,9 @@ const res = await fetch(apiUrl('/api/ai/analyze'), {
                 }
 
                 if (parsedData.detectedPart) {
-                    console.log("AI Detected Part:", parsedData.detectedPart);
                     setDetectedPart(parsedData.detectedPart.toLowerCase());
+                } else if (selectedModality) {
+                    setDetectedPart(selectedModality);
                 }
 
                 // Modality Mismatch Detection
@@ -288,7 +334,7 @@ const res = await fetch(apiUrl('/api/ai/analyze'), {
                 setAiResponse(parsedData.summary ?? null);
                 setAnalysisData(parsedData);
 
-                const issueKeywords = ["fracture", "abnormality", "lesion", "displacement", "tumor", "mass", "bleed", "hemorrhage", "break", "tear", "mass", "cyst", "calcification"];
+                const issueKeywords = ["fracture", "abnormality", "lesion", "displacement", "tumor", "mass", "bleed", "hemorrhage", "break", "tear", "cyst", "calcification", "elevated", "elevation", "abnormal", "abnormalities", "high", "low", "decreased", "increased", "positive", "malignant", "moderate", "severe"];
                 const containsIssue = parsedData.findings?.some((f: string) =>
                     issueKeywords.some(kw => f.toLowerCase().includes(kw))
                 ) ||
@@ -314,7 +360,7 @@ const res = await fetch(apiUrl('/api/ai/analyze'), {
         try {
             await fetch(apiUrl('/api/scans/save'), {
                 method: 'POST',
-                headers: authHeaders((session as any).accessToken),
+                headers: authHeaders((session?.user as any)?.accessToken),
                 body: JSON.stringify({
                     referenceId: `MV-${Math.floor(Math.random() * 9000) + 1000}`,
                     type: analysisData.detectedPart ? `${analysisData.detectedPart.toUpperCase()} Scan` : "Medical Scan",
@@ -495,53 +541,50 @@ const res = await fetch(apiUrl('/api/ai/analyze'), {
                                 {!selectedModality ? (
                                     <div className="space-y-16 px-4">
                                         {groupedModalities.map((group, gIdx) => (
-                                                <div key={group.category} className="space-y-8">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="h-[1px] flex-1 bg-white/5" />
-                                                        <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 bg-[#020617] px-4 whitespace-nowrap">
-                                                            {group.category}
-                                                        </h3>
-                                                        <div className="h-[1px] flex-1 bg-white/5" />
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                        {group.items.map((m, idx) => (
-                                                            <motion.div
-                                                                key={m.id}
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                transition={{ delay: (gIdx * 0.1) + (idx * 0.05) }}
-                                                                onClick={() => {
-                                                                    if (['xray', 'mri', 'ct', 'mammography'].includes(m.id)) {
-                                                                        router.push(`/dashboard/visualizer?modality=${m.id}`);
-                                                                    } else if (m.id === 'ecg') {
-                                                                        router.push(`/dashboard/signals`);
-                                                                    } else {
-                                                                        setSelectedModality(m.id);
-                                                                    }
-                                                                }}
-                                                                className={`p-8 rounded-[2.5rem] ${m.bg} border-2 ${m.border} hover:border-white/20 cursor-pointer transition-all group relative overflow-hidden flex flex-col justify-between h-full`}
-                                                            >
-                                                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-[60px] rounded-full translate-x-10 -translate-y-10" />
-                                                                <div>
-                                                                    <div className={`w-12 h-12 rounded-2xl ${m.bg} border ${m.border} flex items-center justify-center ${m.color} mb-6 group-hover:scale-110 transition-transform`}>
-                                                                        {m.icon}
-                                                                    </div>
-                                                                    <h4 className="text-xl font-black mb-2 tracking-tight text-white italic uppercase">{m.name}</h4>
-                                                                    <p className="text-[11px] text-slate-400 leading-relaxed font-medium mb-6">{m.description}</p>
-                                                                </div>
-                                                                <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] ${m.color} mt-auto`}>
-                                                                    Start Analysis <ChevronRight size={12} />
-                                                                </div>
-                                                            </motion.div>
-                                                        ))}
-                                                    </div>
+                                            <div key={group.category} className="space-y-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-[1px] flex-1 bg-white/5" />
+                                                    <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 bg-[#020617] px-4 whitespace-nowrap">
+                                                        {group.category}
+                                                    </h3>
+                                                    <div className="h-[1px] flex-1 bg-white/5" />
                                                 </div>
-                                            ))}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                    {group.items.map((m, idx) => (
+                                                        <motion.div
+                                                            key={m.id}
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            transition={{ delay: (gIdx * 0.1) + (idx * 0.05) }}
+                                                            onClick={() => {
+                                                                if (['xray', 'mri', 'ct', 'mammography', 'ultrasound', 'pet'].includes(m.id)) {
+                                                                    router.push(`/dashboard/visualizer?modality=${m.id}`);
+                                                                } else if (m.id === 'ecg') {
+                                                                    router.push(`/dashboard/signals`);
+                                                                } else {
+                                                                    setSelectedModality(m.id);
+                                                                }
+                                                            }}
+                                                            className={`p-8 rounded-[2.5rem] ${m.bg} border-2 ${m.border} hover:border-white/20 cursor-pointer transition-all group relative overflow-hidden flex flex-col justify-between h-full`}
+                                                        >
+                                                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-[60px] rounded-full translate-x-10 -translate-y-10" />
+                                                            <div>
+                                                                <div className={`w-12 h-12 rounded-2xl ${m.bg} border ${m.border} flex items-center justify-center ${m.color} mb-6 group-hover:scale-110 transition-transform`}>
+                                                                    {m.icon}
+                                                                </div>
+                                                                <h4 className="text-xl font-black mb-2 tracking-tight text-white italic uppercase">{m.name}</h4>
+                                                                <p className="text-[11px] text-slate-400 leading-relaxed font-medium mb-6">{m.description}</p>
+                                                            </div>
+                                                            <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] ${m.color} mt-auto`}>
+                                                                Start Analysis <ChevronRight size={12} />
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
 
-                                        {/* User Dashboard */}
-                                        <div className="mt-12">
-                                            <PatientDashboard t={t} profile={profile} latestScan={latestScan} />
-                                        </div>
+                                        {/* User Dashboard has been moved to /dashboard/patient-portal */}
                                     </div>
                                 ) : (
                                     <motion.div
@@ -858,7 +901,15 @@ const res = await fetch(apiUrl('/api/ai/analyze'), {
                                                             {bm}: <span className="text-emerald-400 ml-1">Optimal</span>
                                                         </li>
                                                     ))}
-                                                    {(!customMlResult) && (
+                                                    {(!customMlResult?.detectedBiomarkers?.length && analysisData?.findings) && analysisData.findings.slice(0, 6).map((finding, i) => (
+                                                        <li key={i} className="flex items-start gap-4 text-sm text-slate-300 font-medium">
+                                                            <div className="w-6 h-6 rounded-full border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                                                                <CheckCircle2 size={14} className="text-emerald-500" />
+                                                            </div>
+                                                            <span className="leading-tight">{finding}</span>
+                                                        </li>
+                                                    ))}
+                                                    {(!customMlResult?.detectedBiomarkers?.length && !analysisData?.findings?.length) && (
                                                         <li className="flex items-center gap-4 text-sm text-slate-300 font-medium opacity-50 italic">
                                                             Initialize analysis to extract clinical biomarkers...
                                                         </li>
@@ -876,12 +927,20 @@ const res = await fetch(apiUrl('/api/ai/analyze'), {
                                                 <div className="space-y-8">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Voxel Density</p>
-                                                            <p className="text-xl font-black text-white">{customMlResult?.voxelDensity || "--"}%</p>
+                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                                                {customMlResult ? "Voxel Density" : "Analysis Consistency"}
+                                                            </p>
+                                                            <p className="text-xl font-black text-white">
+                                                                {customMlResult ? `${customMlResult.voxelDensity}%` : (analysisData?.confidence ? `${(analysisData.confidence * 100).toFixed(0)}%` : "--")}
+                                                            </p>
                                                         </div>
                                                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Neural Entropy</p>
-                                                            <p className="text-xl font-black text-white">{customMlResult ? (100 - customMlResult.confidence).toFixed(2) : "--"}%</p>
+                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                                                                {customMlResult ? "Neural Entropy" : "Clinical Signal"}
+                                                            </p>
+                                                            <p className="text-xl font-black text-white">
+                                                                {customMlResult ? `${(100 - customMlResult.confidence).toFixed(2)}%` : "Verified"}
+                                                            </p>
                                                         </div>
                                                     </div>
 

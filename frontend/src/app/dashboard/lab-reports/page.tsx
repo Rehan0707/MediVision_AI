@@ -20,7 +20,7 @@ export default function LabReportsPage() {
         if (!session) return;
         try {
             const res = await fetch(apiUrl('/api/reports/bio-analysis'), {
-                headers: authHeaders((session as any).accessToken)
+                headers: authHeaders((session?.user as any)?.accessToken)
             });
             const data = await res.json();
             setBioAnalysis(data);
@@ -33,7 +33,7 @@ export default function LabReportsPage() {
         if (!session) return;
         try {
             const res = await fetch(apiUrl('/api/reports'), {
-                headers: authHeaders((session as any).accessToken)
+                headers: authHeaders((session?.user as any)?.accessToken)
             });
             const data = await res.json();
             setReports(data.map((r: any) => ({
@@ -65,10 +65,7 @@ export default function LabReportsPage() {
             // 1. Create Report
             const createRes = await fetch(apiUrl('/api/reports'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(session as any).accessToken}`
-                },
+                headers: authHeaders((session?.user as any)?.accessToken),
                 body: JSON.stringify({
                     scanType: newReport.type,
                     bodyPart: 'Systemic',
@@ -82,10 +79,7 @@ export default function LabReportsPage() {
             // 2. Analyze Report
             await fetch(apiUrl('/api/reports/analyze'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(session as any).accessToken}`
-                },
+                headers: authHeaders((session?.user as any)?.accessToken),
                 body: JSON.stringify({
                     text: newReport.text,
                     reportId: reportData._id
