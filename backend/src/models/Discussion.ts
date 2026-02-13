@@ -1,13 +1,24 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-const DiscussionSchema = new mongoose.Schema({
+export interface IDiscussion extends Document {
+    title: string;
+    author: mongoose.Types.ObjectId;
+    content: string;
+    category: string;
+    commentsCount: number;
+    activeDoctors: number;
+    timestamp: Date;
+}
+
+const DiscussionSchema: Schema = new Schema({
     title: {
         type: String,
         required: true,
         trim: true
     },
     author: {
-        type: String,
+        type: Schema.Types.ObjectId,
+        ref: 'User',
         required: true
     },
     content: {
@@ -34,4 +45,8 @@ const DiscussionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-export default mongoose.model('Discussion', DiscussionSchema);
+// Index for search
+DiscussionSchema.index({ title: 'text', content: 'text' });
+DiscussionSchema.index({ category: 1 });
+
+export default mongoose.model<IDiscussion>('Discussion', DiscussionSchema);

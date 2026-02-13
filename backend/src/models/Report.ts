@@ -4,9 +4,13 @@ export interface IReport extends Document {
     patient: mongoose.Types.ObjectId;
     doctor?: mongoose.Types.ObjectId;
     scanUrl: string;
-    scanType: 'MRI' | 'CT' | 'X-Ray' | 'Ultrasound';
+    scanType: string;
     bodyPart: string;
     status: 'Pending' | 'Analyzed' | 'Reviewed';
+    analysis?: {
+        findings: string[];
+        summary: string;
+    };
     createdAt: Date;
     updatedAt: Date;
 }

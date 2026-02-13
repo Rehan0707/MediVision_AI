@@ -17,18 +17,33 @@ export interface IUser extends Document {
 }
 
 const UserSchema: Schema = new Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    role: { type: String, enum: ['Patient', 'Doctor', 'Admin'], default: 'Patient' },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    role: {
+        type: String,
+        enum: ['Patient', 'Doctor', 'Admin'],
+        default: 'Patient',
+        index: true
+    },
     password: { type: String },
     isApproved: { type: Boolean, default: false },
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
-    phoneNumber: { type: String },
+    status: {
+        type: String,
+        enum: ['Pending', 'Approved', 'Rejected'],
+        default: 'Pending',
+        index: true
+    },
+    phoneNumber: { type: String, trim: true },
     avatar: { type: String },
+    lastLogin: { type: Date },
     patientProfile: { type: Schema.Types.ObjectId, ref: 'Patient' },
     doctorProfile: { type: Schema.Types.ObjectId, ref: 'Doctor' },
     adminProfile: { type: Schema.Types.ObjectId, ref: 'Admin' },
 }, { timestamps: true });
+
+// Compound index for frequent searches
+UserSchema.index({ email: 1, role: 1 });
+UserSchema.index({ name: 'text' });
 
 UserSchema.pre<IUser>('save', async function () {
     if (!this.isModified('password')) return;
