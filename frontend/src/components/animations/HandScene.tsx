@@ -72,7 +72,31 @@ function Finger({ position, rotation, scale = 1, isThumb = false }: { position: 
     );
 }
 
-function HandModel({ hasIssue }: { hasIssue?: boolean }) {
+function InjuryHotspot({ position, label, isActive }: { position: [number, number, number], label: string, isActive?: boolean }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    useFrame((state) => {
+        if (meshRef.current) {
+            const speed = isActive ? 8 : 4;
+            const amp = isActive ? 0.4 : 0.2;
+            const scale = 1 + Math.sin(state.clock.elapsedTime * speed) * amp;
+            meshRef.current.scale.set(scale, scale, scale);
+        }
+    });
+    return (
+        <group position={position}>
+            <mesh ref={meshRef}>
+                <sphereGeometry args={[0.15, 16, 16]} />
+                <meshStandardMaterial
+                    color={isActive ? "#00D1FF" : "#ff3e3e"}
+                    emissive={isActive ? "#00D1FF" : "#ff3e3e"}
+                    emissiveIntensity={isActive ? 10 : 3}
+                />
+            </mesh>
+        </group>
+    );
+}
+
+function HandModel({ hasIssue, hotspots = [] }: { hasIssue?: boolean, hotspots?: { id: string, position: [number, number, number], label: string }[] }) {
     return (
         <group rotation={[-Math.PI / 3, 0, 0]} position={[0, -1, 0]}>
             <group position={[0, -0.8, 0]}>
@@ -88,7 +112,7 @@ function HandModel({ hasIssue }: { hasIssue?: boolean }) {
             <Finger position={[0.45, 0, 0]} rotation={[0, 0, -0.15]} scale={0.8} />
             <Finger position={[0.65, -0.4, 0]} rotation={[0, 0.4, -0.8]} scale={0.9} isThumb />
 
-            {hasIssue && (
+            {hasIssue && hotspots.length === 0 && (
                 <group position={[-0.2, 1.8, 0.2]}>
                     <Sphere args={[0.25, 32, 32]}>
                         <MeshDistortMaterial
@@ -103,6 +127,10 @@ function HandModel({ hasIssue }: { hasIssue?: boolean }) {
                 </group>
             )}
 
+            {hotspots.map((hs) => (
+                <InjuryHotspot key={hs.id} position={hs.position} label={hs.label} isActive={true} />
+            ))}
+
             <Sphere scale={[1.8, 3, 0.8]} position={[0, 0.5, 0]} args={[1, 64, 64]}>
                 <meshStandardMaterial
                     color="#00D1FF"
@@ -116,7 +144,7 @@ function HandModel({ hasIssue }: { hasIssue?: boolean }) {
     );
 }
 
-export default function HandScene({ hasIssue = false }: { hasIssue?: boolean }) {
+export default function HandScene({ hasIssue = false, hotspots = [] }: { hasIssue?: boolean, hotspots?: { id: string, position: [number, number, number], label: string }[] }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
@@ -145,7 +173,7 @@ export default function HandScene({ hasIssue = false }: { hasIssue?: boolean }) 
                 <pointLight position={[5, 10, 5]} color="#00D1FF" intensity={1.5} />
 
                 <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.2}>
-                    <HandModel hasIssue={hasIssue} />
+                    <HandModel hasIssue={hasIssue} hotspots={hotspots} />
                 </Float>
 
                 <ContactShadows

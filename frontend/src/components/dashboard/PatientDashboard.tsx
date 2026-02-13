@@ -141,7 +141,20 @@ export function PatientDashboard({ t, profile, latestScan }: { t: (key: any) => 
                             Your Biometrics
                         </h4>
                         <div className="space-y-6">
-                            <MetricRow label="Body Mass Index" value={profile?.patientProfile?.weight ? "Profile Sync" : "--"} status="Awaiting Data" color="bg-slate-700" />
+                            <MetricRow
+                                label="Body Mass Index"
+                                value={(() => {
+                                    const weight = profile?.patientProfile?.weight;
+                                    const height = profile?.patientProfile?.height;
+                                    if (weight && height) {
+                                        const bmi = (weight / ((height / 100) ** 2)).toFixed(1);
+                                        return bmi;
+                                    }
+                                    return "--";
+                                })()}
+                                status={profile?.patientProfile?.weight && profile?.patientProfile?.height ? "Synced" : "Awaiting Data"}
+                                color={profile?.patientProfile?.weight && profile?.patientProfile?.height ? "bg-emerald-500" : "bg-slate-700"}
+                            />
                             <MetricRow label="Blood Glucose" value="--" status="No Sync" color="bg-slate-700" />
                             <MetricRow label="Blood Pressure" value="--" status="No Sync" color="bg-slate-700" />
                             <MetricRow label="Cholesterol" value="--" status="No Sync" color="bg-slate-700" />

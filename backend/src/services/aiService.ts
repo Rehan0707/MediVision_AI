@@ -51,16 +51,19 @@ export const analyzeMedicalImage = async (imageBuffer: Buffer, mimeType: string,
         - "thorax": For Chest X-rays, Lung Parenchyma, Rib cage, or Clavicle scans.
         - "knee": For Patellar, Femoral-Tibial joint, or Meniscal imaging.
         - "hand": For Carpal, Metacarpal, Phalangeal, Wrist, or Finger scans.
-        - "bone": For Long bones (Femur, Humerus), Pelvis, or general skeletal fractures not covered above.
+        - "leg": For Femur, Tibia, Fibula, or long bones of the lower extremity.
+        - "bone": For general skeletal fractures or bones not specifically listed above (e.g., pelvis, arm).
 
         JSON Structure:
         {
-            "detectedPart": "string (MUST be one of [brain, spine, thorax, knee, hand, bone])",
+            "detectedPart": "string (MUST be one of [brain, spine, thorax, knee, hand, leg, bone])",
             "preciseAbnormality": "string (Specific clinical finding, e.g. 'Spiral Fracture', 'Consolidation', 'Glioma')",
             "preciseLocation": "string (Anatomical coordinate, e.g. 'Distal Radius', 'Right Middle Lobe', 'L4 Vertebra')",
             "findings": ["Detailed clinical observation 1", "Observation 2"],
             "recommendations": ["Protocol recommendation 1"],
             "summary": "1-sentence executive clinical summary",
+            "pinpoint2D": { "x": number, "y": number }, // Normalized 0-1 coordinates relative to image top-left
+            "pinpoint3D": { "x": number, "y": number, "z": number }, // Local model coordinates (approx -2.0 to 2.0 range)
             "confidence": number (0.00-1.00)
         }`;
 

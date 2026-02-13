@@ -51,21 +51,29 @@ export const updateProfile = async (req: Request, res: Response) => {
         user.avatar = req.body.avatar || user.avatar;
 
         // Update role-specific profile data
+        // Update role-specific profile data
         if (user.role === 'Patient' && user.patientProfile) {
             const patient = await Patient.findById(user.patientProfile);
             if (patient) {
                 patient.dateOfBirth = req.body.dateOfBirth || patient.dateOfBirth;
                 patient.gender = req.body.gender || patient.gender;
                 patient.bloodGroup = req.body.bloodGroup || patient.bloodGroup;
-                patient.weight = req.body.weight || patient.weight;
-                patient.height = req.body.height || patient.height;
+
+                // Handle numeric fields safely
+                if (req.body.weight) patient.weight = Number(req.body.weight);
+                if (req.body.height) patient.height = Number(req.body.height);
+
                 patient.emergencyContact = req.body.emergencyContact || patient.emergencyContact;
+                patient.medicalHistory = req.body.medicalHistory || patient.medicalHistory;
+                patient.allergies = req.body.allergies || patient.allergies;
+
                 await patient.save();
             }
         } else if (user.role === 'Doctor' && user.doctorProfile) {
             const doctor = await Doctor.findById(user.doctorProfile);
             if (doctor) {
                 doctor.specialization = req.body.specialization || doctor.specialization;
+                doctor.licenseNumber = req.body.licenseNumber || doctor.licenseNumber;
                 doctor.clinicName = req.body.clinicName || doctor.clinicName;
                 doctor.workingHours = req.body.workingHours || doctor.workingHours;
                 doctor.experience = req.body.experience || doctor.experience;

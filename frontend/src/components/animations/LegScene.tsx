@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Float, ContactShadows, Environment, MeshDistortMaterial } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -142,7 +142,31 @@ function FractureVisualization({ position }: { position: [number, number, number
     );
 }
 
-export default function LegScene({ hasIssue = false }: { hasIssue?: boolean }) {
+function InjuryHotspot({ position, label, isActive }: { position: [number, number, number], label: string, isActive?: boolean }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    useFrame((state) => {
+        if (meshRef.current) {
+            const speed = isActive ? 8 : 4;
+            const amp = isActive ? 0.4 : 0.2;
+            const scale = 1 + Math.sin(state.clock.elapsedTime * speed) * amp;
+            meshRef.current.scale.set(scale, scale, scale);
+        }
+    });
+    return (
+        <group position={position}>
+            <mesh ref={meshRef}>
+                <sphereGeometry args={[0.15, 16, 16]} />
+                <meshStandardMaterial
+                    color={isActive ? "#00D1FF" : "#ff3e3e"}
+                    emissive={isActive ? "#00D1FF" : "#ff3e3e"}
+                    emissiveIntensity={isActive ? 10 : 3}
+                />
+            </mesh>
+        </group>
+    );
+}
+
+export default function LegScene({ hasIssue = false, hotspots = [] }: { hasIssue?: boolean, hotspots?: { id: string, position: [number, number, number], label: string }[] }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
@@ -167,7 +191,7 @@ export default function LegScene({ hasIssue = false }: { hasIssue?: boolean }) {
                 <PerspectiveCamera makeDefault position={[0, 0, 10]} fov={35} />
                 <OrbitControls
                     enableDamping
-                    autoRotate={!hasIssue}
+                    autoRotate={!hasIssue && hotspots.length === 0}
                     autoRotateSpeed={0.5}
                     minDistance={5}
                     maxDistance={20}
@@ -175,7 +199,7 @@ export default function LegScene({ hasIssue = false }: { hasIssue?: boolean }) {
 
                 {/* Dramatic Lighting */}
                 <ambientLight intensity={0.3} />
-                <spotLight position={[10, 10, 10]} angle={0.3} penumbra={1} intensity={2} castShadow color="#ffffff" />
+                <spotLight position={[10, 10, 15]} angle={0.3} penumbra={1} intensity={2} castShadow color="#ffffff" />
                 <pointLight position={[-10, 0, -5]} color="#3b82f6" intensity={1.5} distance={20} />
                 <pointLight position={[0, -10, 5]} color="#a855f7" intensity={0.8} distance={20} />
 
@@ -183,7 +207,10 @@ export default function LegScene({ hasIssue = false }: { hasIssue?: boolean }) {
                     <group rotation={[0, 0.1, 0]}>
                         <TibiaModel hasIssue={hasIssue} />
                         <FibulaModel hasIssue={hasIssue} />
-                        {hasIssue && <FractureVisualization position={[0.2, -0.5, 0.2]} />}
+                        {hasIssue && hotspots.length === 0 && <FractureVisualization position={[0.2, -0.5, 0.2]} />}
+                        {hotspots.map((hs) => (
+                            <InjuryHotspot key={hs.id} position={hs.position} label={hs.label} isActive={true} />
+                        ))}
                     </group>
                 </Float>
 

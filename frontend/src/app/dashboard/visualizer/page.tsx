@@ -12,7 +12,7 @@ const BrainScene = dynamic(() => import("@/components/animations/BrainScene"), {
 const ThoraxScene = dynamic(() => import("@/components/animations/ThoraxScene"), { ssr: false });
 const LegScene = dynamic(() => import("@/components/animations/LegScene"), { ssr: false });
 import { useSettings } from "@/context/SettingsContext";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, authHeaders } from "@/lib/api";
 import XvrRegistrationPanel from "@/components/visualizer/XvrRegistrationPanel";
 
 import { ScanTypeSelector, ScanType } from "@/components/visualizer/ScanTypeSelector";
@@ -58,10 +58,7 @@ function VisualizerContent() {
         try {
             const res = await fetch(apiUrl('/api/ai/analyze'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(session?.user && { Authorization: `Bearer ${(session.user as any).accessToken}` })
-                },
+                headers: authHeaders((session?.user as any)?.accessToken),
                 body: JSON.stringify({
                     image: base64,
                     modality: modality || 'xray',
@@ -69,8 +66,8 @@ function VisualizerContent() {
                     prompt: modality === 'ultrasound'
                         ? `Analyze this ULTRASOUND image. Identify body part, echo texture, masses, fluid. Return JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
                         : modality === 'pet'
-                        ? `Analyze this PET SCAN image. Identify metabolic activity, hotspots, organs. Return JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
-                        : `Perform clinical analysis for this ${selectedScanType || modality || 'medical'} ${modality?.toUpperCase() || 'X-RAY'} scan. Identify body part and findings.
+                            ? `Analyze this PET SCAN image. Identify metabolic activity, hotspots, organs. Return JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
+                            : `Perform clinical analysis for this ${selectedScanType || modality || 'medical'} ${modality?.toUpperCase() || 'X-RAY'} scan. Identify body part and findings.
                     Return ONLY JSON: {"detectedPart":"string","findings":[{"id":"1","label":"string","description":"string","severity":"low|medium|high"}],"summary":"string","confidence":number}`
                 })
             });
@@ -176,8 +173,8 @@ function VisualizerContent() {
                             document.getElementById('visualizer-upload')?.click();
                         }}
                         className={`flex-1 min-h-[400px] rounded-[3rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group ${(modality === 'xray' && !selectedScanType)
-                                ? 'border-white/5 bg-white/[0.01] opacity-50 cursor-not-allowed'
-                                : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-[#00D1FF]/40'
+                            ? 'border-white/5 bg-white/[0.01] opacity-50 cursor-not-allowed'
+                            : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-[#00D1FF]/40'
                             }`}
                     >
                         <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-transform ${(modality === 'xray' && !selectedScanType) ? 'bg-white/5 text-slate-600' : 'bg-[#00D1FF]/10 text-[#00D1FF] group-hover:scale-110'

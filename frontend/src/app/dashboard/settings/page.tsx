@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Settings, Shield, WifiOff, Bell, User, CheckCircle2, ChevronRight, Moon, Lock, Save, Loader2, Camera, Phone, Calendar, Ruler, Weight, Droplets, Briefcase, Building, Clock, GraduationCap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Settings, Shield, WifiOff, Bell, User, CheckCircle2, ChevronRight, Moon, Lock, Save, Loader2, Camera, Phone, Calendar, Ruler, Weight, Droplets, Briefcase, Building, Clock, GraduationCap, Activity, ShieldCheck, ShieldAlert } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -27,8 +27,12 @@ export default function SettingsPage() {
         bloodGroup: "",
         weight: "",
         height: "",
+        emergencyContact: "",
+        medicalHistory: "",
+        allergies: "",
         // Doctor fields
         specialization: "",
+        licenseNumber: "",
         clinicName: "",
         workingHours: "",
         experience: "",
@@ -41,7 +45,7 @@ export default function SettingsPage() {
             setIsLoading(true);
             try {
                 const res = await fetch(apiUrl('/api/users/profile'), {
-                    headers: authHeaders((session as any).accessToken)
+                    headers: authHeaders((session?.user as any)?.accessToken)
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -53,7 +57,10 @@ export default function SettingsPage() {
                         phoneNumber: data.phoneNumber || "",
                         avatar: data.avatar || "",
                         ...profileData,
-                        dateOfBirth: profileData?.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : ""
+                        dateOfBirth: profileData?.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : "",
+                        // Convert arrays to comma-separated strings for display
+                        medicalHistory: profileData?.medicalHistory?.join(', ') || "",
+                        allergies: profileData?.allergies?.join(', ') || ""
                     });
                 }
             } catch (err) {
@@ -70,15 +77,35 @@ export default function SettingsPage() {
         e.preventDefault();
         setIsSaving(true);
         setSuccessMessage("");
+
         try {
+            // Prepare payload with correct types
+            const payload = { ...formData };
+
+            if (userRole === 'patient') {
+                if (typeof payload.medicalHistory === 'string') {
+                    payload.medicalHistory = payload.medicalHistory.split(',').map((s: string) => s.trim()).filter(Boolean);
+                }
+                if (typeof payload.allergies === 'string') {
+                    payload.allergies = payload.allergies.split(',').map((s: string) => s.trim()).filter(Boolean);
+                }
+            }
+
+            console.log("Updating profile with token:", (session?.user as any)?.accessToken);
+            console.log("Payload:", payload);
+
             const res = await fetch(apiUrl('/api/users/profile'), {
                 method: 'PUT',
-                headers: authHeaders((session as any).accessToken),
-                body: JSON.stringify(formData)
+                headers: authHeaders((session?.user as any)?.accessToken),
+                body: JSON.stringify(payload)
             });
+
             if (res.ok) {
                 setSuccessMessage("Identity sync complete. Profile updated.");
                 setTimeout(() => setSuccessMessage(""), 3000);
+                // Refresh local session data if needed
+            } else {
+                console.error("Update failed with status:", res.status);
             }
         } catch (err) {
             console.error("Update failed:", err);
@@ -127,17 +154,17 @@ export default function SettingsPage() {
                                         formData.name?.split(/\s+/).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
                                     )}
                                 </div>
-<label className="absolute bottom-0 right-0 p-2 rounded-full bg-[#00D1FF] text-black hover:scale-110 transition-all shadow-lg cursor-pointer">
-                                        <Camera size={16} />
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            if (f) {
-                                                const r = new FileReader();
-                                                r.onload = () => setFormData({ ...formData, avatar: r.result as string });
-                                                r.readAsDataURL(f);
-                                            }
-                                        }} />
-                                    </label>
+                                <label className="absolute bottom-0 right-0 p-2 rounded-full bg-[#00D1FF] text-black hover:scale-110 transition-all shadow-lg cursor-pointer">
+                                    <Camera size={16} />
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                        const f = e.target.files?.[0];
+                                        if (f) {
+                                            const r = new FileReader();
+                                            r.onload = () => setFormData({ ...formData, avatar: r.result as string });
+                                            r.readAsDataURL(f);
+                                        }
+                                    }} />
+                                </label>
                             </div>
                             <div className="space-y-2 text-center md:text-left">
                                 <h4 className="text-2xl font-black">{formData.name || 'User Identity'}</h4>
@@ -172,12 +199,16 @@ export default function SettingsPage() {
                                             {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => <option key={g} value={g}>{g}</option>)}
                                         </select>
                                     </div>
+                                    <FormField label="Emergency Contact" icon={<Phone size={14} />} value={formData.emergencyContact} onChange={(v) => setFormData({ ...formData, emergencyContact: v })} />
+                                    <FormField label="Medical History (comma separated)" icon={<Activity size={14} />} value={formData.medicalHistory} className="md:col-span-2" onChange={(v) => setFormData({ ...formData, medicalHistory: v })} />
+                                    <FormField label="Allergies (comma separated)" icon={<ShieldAlert size={14} />} value={formData.allergies} className="md:col-span-2" onChange={(v) => setFormData({ ...formData, allergies: v })} />
                                 </>
                             )}
 
                             {userRole === 'doctor' && (
                                 <>
                                     <FormField label="Specialization" icon={<Briefcase size={14} />} value={formData.specialization} onChange={(v) => setFormData({ ...formData, specialization: v })} />
+                                    <FormField label="License Number" icon={<ShieldCheck size={14} />} value={formData.licenseNumber} onChange={(v) => setFormData({ ...formData, licenseNumber: v })} />
                                     <FormField label="Clinic/Hospital" icon={<Building size={14} />} value={formData.clinicName} onChange={(v) => setFormData({ ...formData, clinicName: v })} />
                                     <FormField label="Working Hours" icon={<Clock size={14} />} value={formData.workingHours} onChange={(v) => setFormData({ ...formData, workingHours: v })} />
                                     <FormField label="Experience (Years)" icon={<Calendar size={14} />} value={formData.experience} type="number" onChange={(v) => setFormData({ ...formData, experience: v })} />
@@ -260,7 +291,35 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
-        </div>
+
+
+            {/* Success Modal */}
+            <AnimatePresence>
+                {successMessage && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="bg-[#1a1a1a] border border-[#00D1FF]/20 p-8 rounded-3xl shadow-2xl shadow-[#00D1FF]/10 max-w-md w-full text-center relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#00D1FF] to-transparent opacity-50" />
+                            <div className="mx-auto w-16 h-16 bg-[#00D1FF]/10 rounded-full flex items-center justify-center mb-6 text-[#00D1FF]">
+                                <CheckCircle2 size={32} />
+                            </div>
+                            <h3 className="text-2xl font-black uppercase italic mb-2 text-white">Identity Synced</h3>
+                            <p className="text-slate-400 mb-8 font-medium">Your neural profile has been successfully updated across the Medivision network.</p>
+                            <button
+                                onClick={() => setSuccessMessage("")}
+                                className="px-8 py-3 bg-[#00D1FF] text-black font-black uppercase tracking-widest rounded-xl hover:bg-[#00D1FF]/90 transition-colors w-full"
+                            >
+                                Acknowledge
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div >
     );
 }
 
@@ -272,7 +331,7 @@ function FormField({ label, icon, value, onChange, type = "text", className = ""
             </label>
             <input
                 type={type}
-                value={value}
+                value={value || ""}
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-slate-300 font-medium outline-none focus:border-[#00D1FF]/50 transition-all"
             />

@@ -119,62 +119,7 @@ export default function RehabPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Protocol Overview */}
                 <div className="lg:col-span-2 space-y-8">
-                    {/* 3D Exercise Visualizer */}
-                    <div className="relative aspect-video rounded-[3.5rem] overflow-hidden group border border-white/5 bg-black/40">
-                        <div className="absolute inset-0 medical-grid opacity-10" />
-                        <RehabExerciseScene />
 
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={isPlainEnglish ? "plain" : "medical"}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="absolute top-8 left-8 p-6 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 z-10 max-w-xs"
-                            >
-                                <p className="text-[10px] font-black text-[#00D1FF] uppercase tracking-widest mb-1 flex items-center gap-2">
-                                    <Eye size={12} /> Live Visual Guide
-                                </p>
-                                <h4 className="text-lg font-black italic uppercase text-white mb-2">
-                                    {isPlainEnglish ? activeExercise.plainTitle : activeExercise.title}
-                                </h4>
-                                <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
-                                    {isPlainEnglish ? activeExercise.plainDescription : activeExercise.description}
-                                </p>
-                            </motion.div>
-                        </AnimatePresence>
-
-                        <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end z-10">
-                            {isSessionActive && (
-                                <div className="flex-1 max-w-md mr-8">
-                                    <div className="flex justify-between text-[10px] font-black text-[#00D1FF] uppercase tracking-widest mb-2">
-                                        <span>Session Progress</span>
-                                        <span>{sessionProgress}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden border border-white/5">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${sessionProgress}%` }}
-                                            className="h-full bg-gradient-to-r from-[#00D1FF] to-[#7000FF]"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => alert(`${activeExercise.plainTitle}: ${activeExercise.plainDescription}`)}
-                                    className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/20 transition-all text-white"
-                                >
-                                    <Info size={20} />
-                                </button>
-                                <button
-                                    onClick={() => document.documentElement.requestFullscreen?.()}
-                                    className="px-8 py-3 rounded-2xl bg-[#00D1FF] text-black font-black text-xs uppercase tracking-widest shadow-xl shadow-[#00D1FF]/20 hover:scale-105 transition-all"
-                                >
-                                    FULL SCREEN
-                                </button>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Interactive Recovery Calendar */}
                     <div className="relative group">

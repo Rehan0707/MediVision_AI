@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
     LayoutDashboard,
     Activity,
@@ -27,6 +27,7 @@ import { signOut } from "next-auth/react";
 
 export function Sidebar() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { t, userRole, setUserRole, isRuralMode, isPrivacyMode } = useSettings();
 
@@ -34,9 +35,9 @@ export function Sidebar() {
         // CORE DIAGNOSTICS
         { group: "CORE", name: t("dashboard"), icon: LayoutDashboard, href: "/dashboard", roles: ["patient", "doctor", "admin"] },
         { group: "CORE", name: "Patient Portal", icon: Activity, href: "/dashboard/patient-portal", roles: ["patient", "doctor", "admin"] },
-        { group: "CORE", name: "X-Ray 3D", icon: Bone, href: "/dashboard?modality=xray", roles: ["patient", "doctor", "admin"] },
-        { group: "CORE", name: "MRI 3D", icon: Brain, href: "/dashboard?modality=mri", roles: ["patient", "doctor", "admin"] },
-        { group: "CORE", name: "CT Scan 3D", icon: Scan, href: "/dashboard?modality=ct", roles: ["patient", "doctor", "admin"] },
+        { group: "CORE", name: "X-Ray 3D", icon: Bone, href: "/dashboard/visualizer?modality=xray", roles: ["patient", "doctor", "admin"] },
+        { group: "CORE", name: "MRI 3D", icon: Brain, href: "/dashboard/visualizer?modality=mri", roles: ["patient", "doctor", "admin"] },
+        { group: "CORE", name: "CT Scan 3D", icon: Scan, href: "/dashboard/visualizer?modality=ct", roles: ["patient", "doctor", "admin"] },
 
         // LABORATORY
         { group: "LAB", name: "Blood Tests", icon: Activity, href: "/dashboard?modality=blood", roles: ["patient", "doctor", "admin"] },
@@ -47,7 +48,7 @@ export function Sidebar() {
         { group: "CARDIO", name: "Stress Test", icon: Activity, href: "/dashboard?modality=stress", roles: ["patient", "doctor", "admin"] },
 
         // INTELLIGENCE & RECOVERY
-        { group: "INTEL", name: t("signals"), icon: Activity, href: "/dashboard/signals", roles: ["patient", "doctor", "admin"] },
+
         { group: "INTEL", name: t("trends"), icon: TrendingUp, href: "/dashboard/trends", roles: ["patient", "doctor", "admin"] },
         { group: "INTEL", name: "Risk Sentinel", icon: ShieldAlert, href: "/dashboard/risk", roles: ["patient", "doctor", "admin"] },
         { group: "INTEL", name: t("copilot"), icon: Stethoscope, href: "/dashboard/copilot", roles: ["patient", "doctor", "admin"] },
@@ -109,7 +110,22 @@ export function Sidebar() {
                         )}
                         <div className="space-y-1">
                             {menuItems.filter(i => i.group === group).map((item) => {
-                                const isActive = pathname === item.href;
+                                const isActive = (() => {
+                                    if (item.href.includes('?')) {
+                                        const [path, query] = item.href.split('?');
+                                        if (pathname !== path) return false;
+                                        const itemParams = new URLSearchParams(query);
+                                        // Specific check for modality
+                                        const modality = itemParams.get('modality');
+                                        if (modality) {
+                                            return searchParams.get('modality') === modality;
+                                        }
+                                        return true;
+                                    }
+                                    // For dashboard home, ensure we don't match if we are deeper in visualizer
+                                    if (item.href === '/dashboard' && pathname !== '/dashboard') return false;
+                                    return pathname === item.href;
+                                })();
                                 return (
                                     <Link
                                         key={item.href}

@@ -13,11 +13,12 @@ export const ECGMonitor: React.FC<ECGMonitorProps> = ({ heartRate, color = "#00D
     const posRef = useRef(0);
     const dataRef = useRef<number[]>([]);
 
-    // ECG Waveform parameters (Standard P-QRS-T complex)
     const generateECGPoint = (x: number) => {
+        if (heartRate <= 0) return 0;
+
         // beatInterval in samples. Speed is approx 60fps.
         // heartRate: 60bpm = 1 beat/sec = 60 samples. 120bpm = 2 beats/sec = 30 samples.
-        const bpm = heartRate > 0 ? heartRate : 72;
+        const bpm = heartRate;
         const samplesPerBeat = (60 * 60) / bpm;
         const phase = (x % samplesPerBeat) / samplesPerBeat;
 

@@ -13,6 +13,7 @@ const ThoraxScene = dynamic(() => import("@/components/animations/ThoraxScene"),
 const KneeScene = dynamic(() => import("@/components/animations/KneeScene"), { ssr: false });
 const SpineScene = dynamic(() => import("@/components/animations/SpineScene"), { ssr: false });
 const BoneScene = dynamic(() => import("@/components/animations/BoneScene"), { ssr: false });
+const LegScene = dynamic(() => import("@/components/animations/LegScene"), { ssr: false });
 
 import MedicalGlossary from "@/components/dashboard/MedicalGlossary";
 import { useSettings } from "@/context/SettingsContext";
@@ -86,6 +87,8 @@ function DashboardContent() {
         recommendations?: string[];
         summary?: string;
         confidence?: number;
+        pinpoint2D?: { x: number; y: number };
+        pinpoint3D?: { x: number; y: number; z: number };
     } | null>(null);
     const [viewMode, setViewMode] = useState<'3d' | 'slice'>('3d');
     const [isScheduling, setIsScheduling] = useState(false);
@@ -757,6 +760,15 @@ function DashboardContent() {
                                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Original Scan</p>
                                                     <div className="w-32 aspect-square rounded-xl overflow-hidden border border-white/10 relative">
                                                         <img src={currentScanImage} alt="Scan" className="w-full h-full object-cover" />
+                                                        {analysisData?.pinpoint2D && (
+                                                            <div
+                                                                className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 z-30"
+                                                                style={{ left: `${analysisData.pinpoint2D.x * 100}%`, top: `${analysisData.pinpoint2D.y * 100}%` }}
+                                                            >
+                                                                <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75" />
+                                                                <div className="absolute inset-1 bg-red-600 rounded-full border border-white shadow-[0_0_10px_red]" />
+                                                            </div>
+                                                        )}
                                                         <div className="absolute inset-0 bg-[#00D1FF]/10 animate-pulse" />
                                                     </div>
                                                 </motion.div>
@@ -772,12 +784,14 @@ function DashboardContent() {
                                                                 <SpineScene hasIssue={hasIssue} />
                                                             ) : (detectedPart === 'thorax' || detectedPart === 'chest' || detectedPart === 'lung' || detectedPart === 'rib') ? (
                                                                 <ThoraxScene hasIssue={hasIssue} />
-                                                            ) : (detectedPart === 'knee' || detectedPart === 'joint' || detectedPart === 'leg') ? (
+                                                            ) : (detectedPart === 'knee' || detectedPart === 'joint') ? (
                                                                 <KneeScene hasIssue={hasIssue} />
+                                                            ) : (detectedPart === 'leg' || detectedPart === 'lower limb') ? (
+                                                                <LegScene hasIssue={hasIssue} hotspots={analysisData?.pinpoint3D ? [{ id: 'injury', position: [analysisData.pinpoint3D.x, analysisData.pinpoint3D.y, analysisData.pinpoint3D.z], label: analysisData.preciseAbnormality || 'Injury' }] : []} />
                                                             ) : (detectedPart === 'hand' || detectedPart === 'wrist' || detectedPart === 'finger' || detectedPart === 'carpal') ? (
-                                                                <HandScene hasIssue={hasIssue} />
+                                                                <HandScene hasIssue={hasIssue} hotspots={analysisData?.pinpoint3D ? [{ id: 'injury', position: [analysisData.pinpoint3D.x, analysisData.pinpoint3D.y, analysisData.pinpoint3D.z], label: analysisData.preciseAbnormality || 'Injury' }] : []} />
                                                             ) : (detectedPart === 'bone' || detectedPart === 'fracture' || selectedModality === 'xray') ? (
-                                                                <BoneScene hasIssue={hasIssue} />
+                                                                <BoneScene hasIssue={hasIssue} hotspots={analysisData?.pinpoint3D ? [{ id: 'injury', position: [analysisData.pinpoint3D.x, analysisData.pinpoint3D.y, analysisData.pinpoint3D.z], label: analysisData.preciseAbnormality || 'Injury' }] : []} />
                                                             ) : (
                                                                 <div className="w-full h-full p-20 flex items-center justify-center">
                                                                     <img

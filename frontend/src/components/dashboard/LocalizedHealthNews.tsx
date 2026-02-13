@@ -57,11 +57,17 @@ export const LocalizedHealthNews = () => {
                 fetchAiNews(`Coordinates ${latitude}, ${longitude}`);
             },
             (error) => {
-                console.error("Location Error:", error);
-                setLocation("Location Access Denied");
+                let msg = "Location Access Denied";
+                if (error.code === 1) msg = "Location Permission Denied";
+                else if (error.code === 2) msg = "Position Unavailable";
+                else if (error.code === 3) msg = "Connection Timeout";
+
+                console.warn(`Geolocation Error (${error.code}): ${error.message}`);
+                setLocation(msg);
                 fetchAiNews("Global Health Community"); // Fallback
                 setIsRefreshing(false);
-            }
+            },
+            { timeout: 10000, maximumAge: 60000 }
         );
     };
 

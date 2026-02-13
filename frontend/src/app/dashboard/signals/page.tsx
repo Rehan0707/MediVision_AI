@@ -235,8 +235,8 @@ function EcgAnalysisSection({ onAnalysisComplete }: { onAnalysisComplete: (resul
                             <div className="flex-1 p-4 rounded-2xl bg-white/5 border border-white/5">
                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Synapse Confidence</p>
                                 <p className="text-2xl font-black text-[#00D1FF]">
-                                {analysisResult.confidence != null ? `${analysisResult.confidence}%` : localMlResult?.confidence ? `${localMlResult.confidence}%` : "--"}
-                            </p>
+                                    {analysisResult.confidence != null ? `${analysisResult.confidence}%` : localMlResult?.confidence ? `${localMlResult.confidence}%` : "--"}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -374,7 +374,7 @@ export default function SignalsPage() {
                             <div className="absolute top-4 left-6 flex items-center gap-2 z-10">
                                 <div className={`w-2 h-2 rounded-full ${heartRate > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    {heartRate > 0 ? `Live • ${heartRate} BPM` : 'Demo Baseline • 72 BPM'} • {waveType} Mode
+                                    {heartRate > 0 ? `Live • ${heartRate} BPM` : 'Signal Standby'} • {waveType} Mode
                                 </span>
                             </div>
 
@@ -509,7 +509,7 @@ export default function SignalsPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 
