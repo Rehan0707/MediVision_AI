@@ -1,5 +1,9 @@
 "use client";
 
+// Force dynamic rendering to fix Vercel build error with useSearchParams
+export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { useSettings } from "@/context/SettingsContext";
@@ -71,9 +75,12 @@ export default function DashboardLayout({
             <div className="flex-1 flex flex-col min-w-0">
                 <Header />
                 <main className="flex-1 overflow-auto p-8 medical-grid">
-                    {children}
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#00D1FF] font-black uppercase tracking-[0.3em] animate-pulse">Initializing Interface...</div>}>
+                        {children}
+                    </Suspense>
                 </main>
             </div>
         </div>
     );
 }
+
