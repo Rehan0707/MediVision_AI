@@ -30,6 +30,11 @@ app.use('/api/community', communityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/health-news', healthNewsRoutes);
 
+// Root Route
+app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to MediVision AI Backend API' });
+});
+
 // Health Check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'MediVision AI Backend', timestamp: new Date() });

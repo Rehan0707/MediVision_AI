@@ -90,7 +90,8 @@ export default function TrendsPage() {
                         <Activity className="text-[#00D1FF]" size={22} />
                         Neural Vigor Index
                     </h3>
-                    <div className="h-64 flex items-end justify-between gap-4 px-4 pb-4 border-b border-l border-white/5">
+                    <div className="relative h-64 flex items-end justify-between gap-4 px-4 pb-4 border-b border-l border-white/5">
+                        <div className="absolute top-1/2 left-0 right-0 h-px border-t border-dashed border-white/10" />
                         {([0, 0, 0, 0, 0, 0, 0]).map((h: number, i: number) => (
                             <motion.div
                                 key={i}
