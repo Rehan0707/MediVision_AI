@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering to fix Vercel build error with useSearchParams
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Shield, Users, Clock, Mail, Microscope, Globe, Activity, ChevronRight, AlertCircle, Sparkles, ShieldCheck } from "lucide-react";
