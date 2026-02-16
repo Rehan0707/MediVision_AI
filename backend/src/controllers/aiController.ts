@@ -94,8 +94,8 @@ export const explainReport = async (req: Request, res: Response) => {
 };
 export const getHealthNews = async (req: Request, res: Response) => {
     try {
-        const { location } = req.body;
-        const news = await aiService.generateHealthNews(location || 'Global');
+        const location = req.query.country as string || req.query.location as string || 'Global';
+        const news = await aiService.generateHealthNews(location);
         res.json(news);
     } catch (error: any) {
         res.status(500).json({ message: error.message });

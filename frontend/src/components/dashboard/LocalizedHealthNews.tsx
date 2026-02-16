@@ -81,11 +81,33 @@ export const LocalizedHealthNews = () => {
             });
 
             const data = await res.json();
+<<<<<<< HEAD
             if (data.news && Array.isArray(data.news)) {
                 setNews(data.news);
                 // If the AI returned a specific location name in the news source or title, 
                 // we could theoretically update the display location, but let's stick to the coordinates or "Detected" state.
                 if (!isRuralMode && !location.includes("Lat")) setLocation("San Francisco Bay Area"); // Fallback cosmetic for demo
+=======
+
+            if (!res.ok) throw new Error(data.message || "Failed to fetch news");
+
+            // Support both 'articles' (external API) and 'news' (internal mock/AI) formats
+            const articles = data.articles || data.news || [];
+
+            if (Array.isArray(articles)) {
+                const mappedNews: HealthNews[] = articles.map((article: any, index: number) => ({
+                    id: article.id || `news-${index}`,
+                    title: article.title,
+                    source: article.source?.name || article.source || "Medical Journal",
+                    time: article.time || (article.publishedAt ? new Date(article.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"),
+                    category: article.category || "General Health",
+                    impact: article.impact || determineImpact(article.title || ""),
+                    summary: article.description || article.summary || "No description available.",
+                    url: article.url || "#",
+                    image: article.urlToImage || article.image
+                }));
+                setNews(mappedNews);
+>>>>>>> b43fa69 (Fix Signal Intel fallback and Health Briefing (News) data mismatch)
             }
         } catch (err) {
             console.error("Failed to fetch AI news:", err);

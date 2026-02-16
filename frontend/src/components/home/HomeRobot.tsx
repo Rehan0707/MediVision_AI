@@ -97,9 +97,9 @@ export default function HomeRobot() {
       const res = await fetch(apiUrl(`/api/health-news?country=${country.toLowerCase()}`));
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load news");
-      setArticles(data.articles || []);
+      setArticles(data.articles || data.news || []);
       setNewsError(null);
-      return data.articles?.length > 0;
+      return (data.articles || data.news)?.length > 0;
     } catch (err: any) {
       const msg =
         err.message?.includes("NEWS_API_KEY") || err.message?.includes("not configured")
